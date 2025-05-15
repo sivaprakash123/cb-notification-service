@@ -1,12 +1,9 @@
 package com.igot.cb.util;
 
-/**
- * @author Mahesh RV
- */
-public class Constants {
 
+public class Constants {
     public static final String KEYSPACE_SUNBIRD = "sunbird";
-//    public static final String KEYSPACE_SUNBIRD_COURSES = "sunbird_courses";
+    public static final String KEYSPACE_SUNBIRD_COURSES = "sunbird_courses";
     public static final String CORE_CONNECTIONS_PER_HOST_FOR_LOCAL = "coreConnectionsPerHostForLocal";
     public static final String CORE_CONNECTIONS_PER_HOST_FOR_REMOTE = "coreConnectionsPerHostForRemote";
     public static final String MAX_CONNECTIONS_PER_HOST_FOR_LOCAL = "maxConnectionsPerHostForLocal";
@@ -41,31 +38,7 @@ public class Constants {
     public static final String API_VERSION_1 = "1.0";
     public static final String X_AUTH_TOKEN = "x-authenticated-user-token";
     public static final String USER_ID_DOESNT_EXIST = "User Id doesn't exist! Please supply a valid auth token";
-    public static final String TABLE_USER = "user";
-    public static final String TABLE_USER_EXTERNAL_ENROLMENTS = "user_external_enrolments";
-    public static final String ENROLLED_DATE = "enrolled_date";
-    public static final String COURSE_ID_RQST = "courseId";
-    public static final String CIOS_ENROLLMENT_CREATE="ciosenroll.v1.create";
-    public static final String CIOS_ENROLLMENT_READ_COURSELIST="ciosenroll.v1.courselist.byuserid";
-    public static final String CIOS_ENROLLMENT_READ_COURSEID="ciosenroll.v1.readby.useridcourseid";
-    public static final String USER_ID="userid";
-    public static final String COURSE_ID="courseid";
-    public static final String STATUS="status";
-    public static final String COMPLETED_ON="completedon";
-    public static final String COMPLETION_PERCENTAGE="completionpercentage";
-    public static final String UPDATED_ON="updatedon";
-    public static final String PROVIDER_NAME="providerName";
-    public static final String COURSE_NAME="courseName";
-    public static final String COURSE_POSTER_IMAGE="coursePosterImage";
-    public static final String RECIPIENT_NAME="recipientName";
-    public static final String PROGRESS="progress";
-    public static final String COMPLETION_DATE="completiondate";
-    public static final String PARTNER_ID = "partnerId";
-    public static final String CIOS_ENROLLMENT_PREGRESS_UPDATE="ciosprogressupdate.v1.create";
-    public static final String PARTNER_CODE = "partnerCode";
-    public static final String TRANSFORM_PROGRESS_JSON = "transformProgressJson";
-    public static final String SVG_TEMPLATE = "svgTemplate";
-    public static final String REQUEST = "request";
+
     public static final String LIMIT = "limit";
     public static final String LOCAL_DATACENTER = "spring.cassandra.local-datacenter";
 
@@ -75,7 +48,36 @@ public class Constants {
     public static final String USER_NOTIFICATION_READ_N_DAYSID="notification.v1.readby.ndays";
     public static final String USER_NOTIFICATION_READ_UPDATEID="notification.v1.update.notificationid";
     public static final  String USER_NOTIFICATION_DELETE ="notification.v1.delete.notificationid";
+    public static final Integer MAX_NOTIFICATION_READ_BATCH_SIZE =20;
 
+
+    public static final String NOTIFICATION_ID = "notification_id";
+    public static final String USER_ID = "user_id";
+    public static final String CREATED_AT = "created_at";
+    public static final String UPDATED_AT = "updated_at";
+    public static final String IS_DELETED = "is_deleted";
+    public static final String READ = "read";
+    public static final String READ_AT = "read_at";
+    public static final String UTC = "UTC";
+    public static final String TEMPLATE_ID = "template_id";
+    public static final String TYPE = "type";
+    public static final String MESSAGE = "message";
+    public static final String ROLE = "role";
+    public static final String SOURCE = "source";
+    public static final String CATEGORY = "category";
+    public static final String NOTIFICATIONS = "notifications";
+    public static final String TOTAL = "total";
+    public static final String PAGE = "page";
+    public static final String SIZE = "size";
+    public static final String HAS_NEXT_PAGE = "hasNextPage";
+    public static final String ID = "id";
+    public static final String REQUEST = "request";
+    public static final String IDS = "ids";
+    public static final int MAX_NOTIFICATIONS_FETCH_FOR_READ = 100;
+
+    public static final int HTTP_CLIENT_TIMEOUT_MS = 45000;
+    public static final int HTTP_CLIENT_MAX_TOTAL_CONNECTIONS = 2000;
+    public static final int HTTP_CLIENT_MAX_CONNECTIONS_PER_ROUTE = 500;
 
     // Redis
     public static final String API_REDIS_DELETE = "api.redis.delete";
@@ -87,6 +89,18 @@ public class Constants {
     public static final String COMPETENCY_CACHE_NAME_BY_TYPE = "competencyByType";
     public static final String SUCCESSFUL = "Successful";
     public static final String QUESTION_ID = "qs_id_";
+
+
+    public static final String API_HEALTH_CHECK = "api.health.check";
+    public static final String DRAFT = "DRAFT";
+    public static final Object CREATED = "Created";
+    public static final Object UPDATED = "Updated";
+    public static final String HEALTHY = "healthy";
+    public static final String CHECKS = "checks";
+    public static final String CASSANDRA_DB = "cassandra db";
+    public static final String REDIS_CACHE = "redis cache";
+    public static final String NAME = "name";
+    public static final String TABLE_SYSTEM_SETTINGS = "system_settings";
 
     private Constants() {
     }

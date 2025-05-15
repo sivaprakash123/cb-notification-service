@@ -8,9 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.*;
 
 
-/**
- * @author Mahesh RV
- */
+
 public class CryptoUtil {
     private static final Charset US_ASCII = StandardCharsets.US_ASCII;
     private static final Logger logger = LoggerFactory.getLogger(CryptoUtil.class.getName());

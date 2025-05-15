@@ -8,10 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-/**
- * @author Mahesh RV
- * @author Ruksana
- */
+
 public class CassandraPropertyReader {
 
     private static final String FILE_NAME = "cassandratablecolumn.properties";

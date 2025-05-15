@@ -26,8 +26,6 @@ import java.util.stream.Collectors;
 
 
 /**
- * @author Mahesh RV
- * @author Ruksana
  * <p>
  * Manages Cassandra connections and sessions.
  */
