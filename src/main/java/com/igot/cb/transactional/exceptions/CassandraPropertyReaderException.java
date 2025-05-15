@@ -2,8 +2,6 @@ package com.igot.cb.transactional.exceptions;
 
 
 /**
- * @author Mahesh RV
- * @author Ruksana
  * Custom exception class for handling errors related to reading Cassandra properties.
  * Extends RuntimeException to indicate unchecked exceptions.
  */

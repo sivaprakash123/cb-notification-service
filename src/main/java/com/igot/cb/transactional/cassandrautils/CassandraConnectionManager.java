@@ -4,10 +4,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 
 import java.util.List;
 
-/**
- * @author Mahesh RV
- * @author Ruksana
- */
+
 public interface CassandraConnectionManager {
 
     /**

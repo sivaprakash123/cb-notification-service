@@ -6,10 +6,7 @@ import com.igot.cb.util.Constants;
 
 import java.util.*;
 
-/**
- * @author Mahesh RV
- * @author Ruksana
- */
+
 public final class CassandraUtil {
 
     private CassandraUtil() {

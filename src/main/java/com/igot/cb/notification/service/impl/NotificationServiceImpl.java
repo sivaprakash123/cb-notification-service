@@ -1,7 +1,9 @@
 package com.igot.cb.notification.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.igot.cb.authentication.util.AccessTokenValidator;
+import com.igot.cb.notification.enums.NotificationReadStatus;
 import com.igot.cb.notification.service.NotificationService;
 import com.igot.cb.transactional.cassandrautils.CassandraOperation;
 import com.igot.cb.util.Constants;
@@ -20,9 +22,12 @@ import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.igot.cb.util.Constants.*;
+
 @Service
 @Slf4j
 public class NotificationServiceImpl implements NotificationService {
+
 
     @Autowired
     AccessTokenValidator accessTokenValidator;
@@ -36,14 +41,18 @@ public class NotificationServiceImpl implements NotificationService {
     @Autowired
     CacheService cacheService;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Override
     public SBApiResponse createNotification(JsonNode userNotificationDetail, String token) {
         log.info("NotificationService::CreateNotification: inside the method");
         SBApiResponse response = transformUtility.createDefaultResponse(Constants.USER_NOTIFICATION_CREATE);
+
         try {
-//            String userId = accessTokenValidator.verifyUserToken(token);
-            String userId = "96102"; // Normally extracted from token
+            String userId = accessTokenValidator.verifyUserToken(token);
             log.info("UserId from auth token {}", userId);
+
             if (StringUtils.isBlank(userId) || userId.equalsIgnoreCase(Constants.UNAUTHORIZED)) {
                 response.getParams().setMsg(Constants.USER_ID_DOESNT_EXIST);
                 response.getParams().setStatus(Constants.FAILED);
@@ -51,36 +60,51 @@ public class NotificationServiceImpl implements NotificationService {
                 return response;
             }
 
-            ZoneId zoneId = ZoneId.of("UTC");
+            ZoneId zoneId = ZoneId.of(UTC);
             Instant instant = LocalDateTime.now().atZone(zoneId).toInstant();
 
             Map<String, Object> dbMap = new HashMap<>();
-            dbMap.put("notification_id", UUID.randomUUID().toString());
-            dbMap.put("user_id", userId);
-            dbMap.put("created_at", instant);
-            dbMap.put("updated_at", instant);
-            dbMap.put("is_deleted", false);
-            dbMap.put("read", false);
-            dbMap.put("read_at", null);
+            dbMap.put(Constants.NOTIFICATION_ID, UUID.randomUUID().toString());
+            dbMap.put(USER_ID, userId);
+            dbMap.put(CREATED_AT, instant);
+            dbMap.put(UPDATED_AT, instant);
+            dbMap.put(IS_DELETED, false);
+            dbMap.put(READ, false);
+            dbMap.put(READ_AT, null);
 
-            Iterator<Map.Entry<String, JsonNode>> fields = userNotificationDetail.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> entry = fields.next();
-                dbMap.put(entry.getKey(), entry.getValue().asText());
+
+            JsonNode requestNode = userNotificationDetail.get(REQUEST);
+            if (requestNode != null && requestNode.isObject()) {
+                Iterator<Map.Entry<String, JsonNode>> fields = requestNode.fields();
+                while (fields.hasNext()) {
+                    Map.Entry<String, JsonNode> entry = fields.next();
+                    dbMap.put(entry.getKey(), entry.getValue().asText());
+                }
+            } else {
+                log.warn("Missing or invalid 'request' node in payload");
+                response.getParams().setMsg("Missing or invalid 'request' node in payload");
+                response.getParams().setStatus(Constants.FAILED);
+                response.setResponseCode(HttpStatus.BAD_REQUEST);
+                return response;
             }
 
-            Object res = cassandraOperation.insertRecord(Constants.KEYSPACE_SUNBIRD,
-                    Constants.TABLE_USER_NOTIFICATION, dbMap);
+            Object res = cassandraOperation.insertRecord(
+                    Constants.KEYSPACE_SUNBIRD,
+                    Constants.TABLE_USER_NOTIFICATION,
+                    dbMap
+            );
             log.info("Inserted notification: {}", res.toString());
 
-            // Prepare response by excluding unwanted fields like 'is_deleted'
             Map<String, Object> responseMap = new HashMap<>(dbMap);
-            responseMap.remove("is_deleted");
+            responseMap.remove(IS_DELETED);
+            responseMap.remove(UPDATED_AT);
+            responseMap.remove(USER_ID);
+            responseMap.remove(READ_AT);
 
             response.setResponseCode(HttpStatus.OK);
             response.setResult(responseMap);
 
-            String notificationId = (String) responseMap.get("notification_id");
+            String notificationId = (String) responseMap.get(NOTIFICATION_ID);
             if (StringUtils.isNotBlank(notificationId)) {
                 cacheService.putCache("notification:" + notificationId, response);
             }
@@ -97,13 +121,15 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+
     @Override
     public SBApiResponse readByUserIdAndNotificationId(String notificationId, String token) {
         log.info("NotificationService::readByUserIdAndNotificationId: inside the method");
+
         SBApiResponse response = transformUtility.createDefaultResponse(Constants.USER_NOTIFICATION_READ_NOTIFICATIONID);
 
         try {
-            String userId = "96102"; // Replace with token extraction
+            String userId = accessTokenValidator.verifyUserToken(token);
             if (StringUtils.isBlank(userId) || userId.equalsIgnoreCase(Constants.UNAUTHORIZED)) {
                 response.getParams().setMsg(Constants.USER_ID_DOESNT_EXIST);
                 response.getParams().setStatus(Constants.FAILED);
@@ -111,25 +137,29 @@ public class NotificationServiceImpl implements NotificationService {
                 return response;
             }
 
-            // Step 1: Query all notifications for the user
             Map<String, Object> queryMap = new HashMap<>();
-            queryMap.put("user_id", userId);
+            queryMap.put(USER_ID, userId);
+
             List<Map<String, Object>> notifications = cassandraOperation.getRecordsByPropertiesWithoutFiltering(
                     Constants.KEYSPACE_SUNBIRD,
                     Constants.TABLE_USER_NOTIFICATION,
                     queryMap,
                     null,
-                    null
+                    MAX_NOTIFICATIONS_FETCH_FOR_READ
             );
 
-            // Step 2: Filter in-memory for the correct notification_id
+
             Optional<Map<String, Object>> match = notifications.stream()
-                    .filter(n -> notificationId.equals(n.get("notification_id")))
+                    .filter(n -> notificationId.equals(n.get(NOTIFICATION_ID)))
                     .findFirst();
 
             if (match.isPresent()) {
                 Map<String, Object> resultMap = new HashMap<>(match.get());
-                resultMap.remove("is_deleted");
+                resultMap.remove(IS_DELETED);
+                resultMap.remove(UPDATED_AT);
+                resultMap.remove(USER_ID);
+                resultMap.remove(READ_AT);
+                resultMap.remove(TEMPLATE_ID);
                 response.setResult(resultMap);
                 response.setResponseCode(HttpStatus.OK);
             } else {
@@ -147,16 +177,13 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
 
+
     @Override
-    public SBApiResponse readByUserIdAndLastXDaysNotifications(String token, int days, int page, int size) {
+    public SBApiResponse readByUserIdAndLastXDaysNotifications(String token, int days, int page, int size, NotificationReadStatus status) {
         log.info("NotificationService::readByUserIdAndLastXDaysNotifications: inside the method");
-
         SBApiResponse response = transformUtility.createDefaultResponse(Constants.USER_NOTIFICATION_READ_N_DAYSID);
-
         try {
-            // String userId = accessTokenValidator.verifyUserToken(token);
-            String userId = "96102"; // Replace with actual token logic
-
+            String userId = accessTokenValidator.verifyUserToken(token);
             if (StringUtils.isBlank(userId) || userId.equalsIgnoreCase(Constants.UNAUTHORIZED)) {
                 response.getParams().setMsg(Constants.USER_ID_DOESNT_EXIST);
                 response.getParams().setStatus(Constants.FAILED);
@@ -164,38 +191,41 @@ public class NotificationServiceImpl implements NotificationService {
                 return response;
             }
 
-            // Dynamically calculate "N days ago"
             Instant fromDate = ZonedDateTime.now(ZoneOffset.UTC).minusDays(days).toInstant();
 
-            // Fetch all notifications for this user
             List<Map<String, Object>> userNotificationList = cassandraOperation.getRecordsByPropertiesWithoutFiltering(
                     Constants.KEYSPACE_SUNBIRD,
                     Constants.TABLE_USER_NOTIFICATION,
-                    Map.of("user_id", userId),
-                    List.of("notification_id", "created_at", "type", "message", "read"),
-                    200 // You can also make this dynamic if needed
+                    Map.of(USER_ID, userId),
+                    List.of(NOTIFICATION_ID, CREATED_AT, TYPE, MESSAGE, READ, ROLE, SOURCE, CATEGORY),
+                    MAX_NOTIFICATIONS_FETCH_FOR_READ
             );
 
-            // Filter for notifications created after 'fromDate'
+            // Apply date and read status filtering
+
             List<Map<String, Object>> filteredNotifications = userNotificationList.stream()
                     .filter(notification -> {
-                        Instant createdAt = (Instant) notification.get("created_at");
-                        return createdAt != null && createdAt.isAfter(fromDate);
+                        Instant createdAt = (Instant) notification.get(CREATED_AT);
+                        if (createdAt == null || createdAt.isBefore(fromDate)) return false;
+
+                        Boolean isRead = (Boolean) notification.get(READ);
+                        if (status == NotificationReadStatus.READ) return Boolean.TRUE.equals(isRead);
+                        else if (status == NotificationReadStatus.UNREAD) return Boolean.FALSE.equals(isRead);
+                        else return true;
                     })
                     .collect(Collectors.toList());
 
-            // Pagination
             int total = filteredNotifications.size();
             int fromIndex = Math.min(page * size, total);
             int toIndex = Math.min(fromIndex + size, total);
             List<Map<String, Object>> paginated = filteredNotifications.subList(fromIndex, toIndex);
 
             Map<String, Object> resultMap = new HashMap<>();
-            resultMap.put("notifications", paginated);
-            resultMap.put("total", total);
-            resultMap.put("page", page);
-            resultMap.put("size", size);
-            resultMap.put("hasNextPage", toIndex < total);
+            resultMap.put(NOTIFICATIONS, paginated);
+            resultMap.put(TOTAL, total);
+            resultMap.put(PAGE, page);
+            resultMap.put(SIZE, size);
+            resultMap.put(HAS_NEXT_PAGE, toIndex < total);
 
             response.setResponseCode(HttpStatus.OK);
             response.setResult(resultMap);
@@ -215,41 +245,41 @@ public class NotificationServiceImpl implements NotificationService {
         List<Map<String, Object>> updated = new ArrayList<>();
 
         try {
-            String userId = "96102"; // Replace with token-based logic
+            String userId = accessTokenValidator.verifyUserToken(token);
 
             for (String notificationId : notificationIds) {
-                // Fetch all records for this user
+
                 List<Map<String, Object>> records = cassandraOperation.getRecordsByPropertiesWithoutFiltering(
                         Constants.KEYSPACE_SUNBIRD,
                         Constants.TABLE_USER_NOTIFICATION,
-                        Map.of("user_id", userId),
+                        Map.of(USER_ID, userId),
                         null,
-                        100
+                        MAX_NOTIFICATIONS_FETCH_FOR_READ
                 );
 
                 Optional<Map<String, Object>> match = records.stream()
-                        .filter(r -> notificationId.equals(r.get("notification_id")))
+                        .filter(r -> notificationId.equals(r.get(NOTIFICATION_ID)))
                         .findFirst();
 
                 if (match.isPresent()) {
                     Map<String, Object> notification = match.get();
-                    Instant createdAt = (Instant) notification.get("created_at");
+                    Instant createdAt = (Instant) notification.get(CREATED_AT);
 
                     // Check if already read
-                    Object readValue = notification.get("read");
+                    Object readValue = notification.get(READ);
                     boolean isAlreadyRead = readValue instanceof Boolean && (Boolean) readValue;
 
                     if (createdAt != null && !isAlreadyRead) {
                         Instant readAt = Instant.now();
 
                         Map<String, Object> updateMap = Map.of(
-                                "read", true,
-                                "read_at", readAt
+                                READ, true,
+                                READ_AT, readAt
                         );
 
                         Map<String, Object> compositeKey = Map.of(
-                                "user_id", userId,
-                                "created_at", createdAt
+                                USER_ID, userId,
+                                CREATED_AT, createdAt
                         );
 
                         Map<String, Object> result = cassandraOperation.updateRecord(
@@ -261,9 +291,9 @@ public class NotificationServiceImpl implements NotificationService {
 
                         if (Constants.SUCCESS.equalsIgnoreCase((String) result.get(Constants.RESPONSE))) {
                             updated.add(Map.of(
-                                    "id", notificationId,
-                                    "read", true,
-                                    "read_at", readAt.toString()
+                                    ID, notificationId,
+                                    READ, true,
+                                    READ_AT, readAt.toString()
                             ));
                         }
                     } else {
@@ -294,34 +324,34 @@ public class NotificationServiceImpl implements NotificationService {
         List<Map<String, Object>> updated = new ArrayList<>();
 
         try {
-            String userId = "96102"; // Replace with actual token parsing logic
+            String userId = accessTokenValidator.verifyUserToken(token);
 
             for (String notificationId : notificationIds) {
                 List<Map<String, Object>> records = cassandraOperation.getRecordsByPropertiesWithoutFiltering(
                         Constants.KEYSPACE_SUNBIRD,
                         Constants.TABLE_USER_NOTIFICATION,
-                        Map.of("user_id", userId),
+                        Map.of(USER_ID, userId),
                         null,
-                        100
+                        MAX_NOTIFICATIONS_FETCH_FOR_READ
                 );
 
                 Optional<Map<String, Object>> match = records.stream()
-                        .filter(r -> notificationId.equals(r.get("notification_id")))
+                        .filter(r -> notificationId.equals(r.get(NOTIFICATION_ID)))
                         .findFirst();
 
                 if (match.isPresent()) {
                     Map<String, Object> notification = match.get();
-                    Instant createdAt = (Instant) notification.get("created_at");
+                    Instant createdAt = (Instant) notification.get(CREATED_AT);
 
-                    if (createdAt != null && !Boolean.TRUE.equals(notification.get("is_deleted"))) {
+                    if (createdAt != null && !Boolean.TRUE.equals(notification.get(IS_DELETED))) {
                         Map<String, Object> updateMap = Map.of(
-                                "is_deleted", true,
-                                "updated_at", Instant.now()
+                                IS_DELETED, true,
+                                UPDATED_AT, Instant.now()
                         );
 
                         Map<String, Object> compositeKey = Map.of(
-                                "user_id", userId,
-                                "created_at", createdAt
+                                USER_ID, userId,
+                                CREATED_AT, createdAt
                         );
 
                         Map<String, Object> result = cassandraOperation.updateRecord(
@@ -333,8 +363,8 @@ public class NotificationServiceImpl implements NotificationService {
 
                         if (Constants.SUCCESS.equalsIgnoreCase((String) result.get(Constants.RESPONSE))) {
                             updated.add(Map.of(
-                                    "id", notificationId,
-                                    "is_deleted", true
+                                    ID, notificationId,
+                                    IS_DELETED, true
                             ));
                         }
                     } else {
@@ -346,7 +376,7 @@ public class NotificationServiceImpl implements NotificationService {
             response.getParams().setMsg("Notifications marked as deleted successfully");
             response.getParams().setStatus(Constants.SUCCESS);
             response.setResponseCode(HttpStatus.OK);
-            response.setResult(Map.of("notifications", updated));
+            response.setResult(Map.of(NOTIFICATIONS, updated));
 
             return response;
 
@@ -355,8 +385,6 @@ public class NotificationServiceImpl implements NotificationService {
             throw new CustomException(Constants.ERROR, e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
 
 
 }

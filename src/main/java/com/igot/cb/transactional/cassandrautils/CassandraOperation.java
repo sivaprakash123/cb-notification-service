@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author Mahesh RV
- * @author Ruksana
  * Interface defining Cassandra operations for querying records.
  */
 

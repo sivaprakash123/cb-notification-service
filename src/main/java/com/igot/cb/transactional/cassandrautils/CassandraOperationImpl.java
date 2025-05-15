@@ -29,10 +29,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 
-/**
- * @author Mahesh RV
- * @author Ruksana
- */
 @Component
 @Slf4j
 public class CassandraOperationImpl implements CassandraOperation {

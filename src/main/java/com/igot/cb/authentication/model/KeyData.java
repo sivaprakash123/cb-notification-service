@@ -2,9 +2,7 @@ package com.igot.cb.authentication.model;
 
 import java.security.PublicKey;
 
-/**
- * @author Mahesh RV
- */
+
 public class KeyData {
     private String keyId;
     private PublicKey publicKey;
