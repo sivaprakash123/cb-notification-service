@@ -74,6 +74,10 @@ public class Constants {
     public static final String REQUEST = "request";
     public static final String IDS = "ids";
     public static final int MAX_NOTIFICATIONS_FETCH_FOR_READ = 100;
+    public static final int DEFAULT_NOTIFICATION_DAYS = 30;
+    public static final int DEFAULT_NOTIFICATION_PAGE = 0;
+    public static final int DEFAULT_NOTIFICATION_PAGE_SIZE = 10;
+    public static final String DEFAULT_NOTIFICATION_READ_STATUS = "BOTH";
 
     public static final int HTTP_CLIENT_TIMEOUT_MS = 45000;
     public static final int HTTP_CLIENT_MAX_TOTAL_CONNECTIONS = 2000;
