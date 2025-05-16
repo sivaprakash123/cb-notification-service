@@ -41,10 +41,10 @@ public class NotificationController {
     @GetMapping("/list")
     public ResponseEntity<?> getLastXDaysNotifications(
             @RequestHeader(Constants.X_AUTH_TOKEN) String token,
-            @RequestParam(defaultValue = "30") int days,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "BOTH") NotificationReadStatus status) {
+            @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_DAYS + "") int days,
+            @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_PAGE + "") int page,
+            @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_PAGE_SIZE + "") int size,
+            @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_READ_STATUS) NotificationReadStatus status) {
 
         SBApiResponse response = notificationService.readByUserIdAndLastXDaysNotifications(token, days, page, size, status);
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -57,18 +57,6 @@ public class NotificationController {
             @RequestBody Map<String, Object> requestBody) {
 
         List<String> ids = (List<String>) ((Map<String, Object>) requestBody.get(REQUEST)).get(IDS);
-
-
-        if (ids == null || ids.isEmpty()) {
-            return new ResponseEntity<>("Request must contain a non-empty list of notification IDs.", HttpStatus.BAD_REQUEST);
-        }
-
-        if (ids.size() > Constants.MAX_NOTIFICATION_READ_BATCH_SIZE) {
-            return new ResponseEntity<>(
-                    "You can only mark up to " + Constants.MAX_NOTIFICATION_READ_BATCH_SIZE + " notifications as read at a time.",
-                    HttpStatus.BAD_REQUEST
-            );
-        }
         SBApiResponse response = notificationService.markNotificationsAsRead(token, ids);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
@@ -78,21 +66,7 @@ public class NotificationController {
             @RequestHeader(Constants.X_AUTH_TOKEN) String token,
             @RequestBody Map<String, Object> requestBody) {
 
-
         List<String> ids = (List<String>) ((Map<String, Object>) requestBody.get(REQUEST)).get(IDS);
-
-
-        if (ids == null || ids.isEmpty()) {
-            return new ResponseEntity<>("Request must contain a non-empty list of notification IDs.", HttpStatus.BAD_REQUEST);
-        }
-
-        if (ids.size() > Constants.MAX_NOTIFICATION_READ_BATCH_SIZE) {
-            return new ResponseEntity<>(
-                    "You can only mark up to " + Constants.MAX_NOTIFICATION_READ_BATCH_SIZE + " notifications as read at a time.",
-                    HttpStatus.BAD_REQUEST
-            );
-        }
-
         SBApiResponse response = notificationService.markNotificationsAsDeleted(token, ids);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
