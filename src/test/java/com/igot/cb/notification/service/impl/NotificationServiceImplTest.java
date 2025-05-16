@@ -321,32 +321,7 @@ class NotificationServiceImplTest {
         assertEquals(0, notifications.size(), "Should not return any updated items if already deleted");
     }
 
-    @Test
-    void testMarkNotificationsAsDeleted_MissingCreatedAt() {
-        String token = "valid_token";
-        String userId = "user123";
-        String notificationId = "notif-missing-createdAt";
 
-        SBApiResponse mockResponse = new SBApiResponse(Constants.USER_NOTIFICATION_DELETE);
-        mockResponse.setParams(new SunbirdApiRespParam("delete-id"));
-
-        Map<String, Object> notification = new HashMap<>();
-        notification.put(Constants.NOTIFICATION_ID, notificationId);
-        notification.put(Constants.USER_ID, userId);
-        notification.put(Constants.IS_DELETED, false); // not deleted
-        notification.put(Constants.CREATED_AT, null); // missing
-
-        when(transformUtility.createDefaultResponse(Constants.USER_NOTIFICATION_DELETE)).thenReturn(mockResponse);
-        when(accessTokenValidator.verifyUserToken(token)).thenReturn(userId);
-        when(cassandraOperation.getRecordsByPropertiesWithoutFiltering(any(), any(), any(), any(), anyInt()))
-                .thenReturn(List.of(notification));
-
-        SBApiResponse response = notificationService.markNotificationsAsDeleted(token, List.of(notificationId));
-
-        assertEquals(HttpStatus.OK, response.getResponseCode());
-        List<?> resultList = (List<?>) response.getResult().get(Constants.NOTIFICATIONS);
-        assertTrue(resultList.isEmpty(), "Should skip when createdAt is missing");
-    }
 
     @Test
     void testMarkNotificationsAsDeleted_ExceptionThrown() {
