@@ -1,10 +1,10 @@
 package com.igot.cb.health.service;
 
 
-import com.igot.cb.util.dto.SBApiResponse;
+import com.igot.cb.util.ApiResponse;
 
 public interface HealthService {
 
-    SBApiResponse checkHealthStatus() throws Exception;
+    ApiResponse checkHealthStatus() throws Exception;
 
 }

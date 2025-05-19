@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.igot.cb.util.Constants;
 
+
 import java.util.*;
 
 
@@ -12,9 +13,11 @@ public final class CassandraUtil {
     private CassandraUtil() {
     }
 
-    private static final CassandraPropertyReader propertiesCache = CassandraPropertyReader.getInstance();
+    static final CassandraPropertyReader propertiesCache = CassandraPropertyReader.getInstance();
 
-    public static String getPreparedStatement(String keyspaceName, String tableName, Map<String, Object> map) {
+
+    public static String getPreparedStatement(
+            String keyspaceName, String tableName, Map<String, Object> map) {
         StringBuilder query = new StringBuilder();
         query.append(Constants.INSERT_INTO).append(keyspaceName).append(Constants.DOT).append(tableName).append(Constants.OPEN_BRACE);
         Set<String> keySet = map.keySet();
@@ -29,6 +32,7 @@ public final class CassandraUtil {
         query.append(commaSepValueBuilder).append(Constants.CLOSING_BRACE);
         return query.toString();
     }
+
 
     public static List<Map<String, Object>> createResponse(ResultSet results) {
         List<Map<String, Object>> responseList = new ArrayList<>();

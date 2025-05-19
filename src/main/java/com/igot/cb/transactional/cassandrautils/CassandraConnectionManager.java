@@ -1,8 +1,7 @@
 package com.igot.cb.transactional.cassandrautils;
 
-import com.datastax.oss.driver.api.core.CqlSession;
 
-import java.util.List;
+import com.datastax.oss.driver.api.core.CqlSession;
 
 
 public interface CassandraConnectionManager {
@@ -14,7 +13,5 @@ public interface CassandraConnectionManager {
      * @return A Cassandra Session object for interacting with the specified keyspace.
      */
     CqlSession getSession(String keyspaceName);
-
-    List<String> getTableList(String keyspacename);
 
 }

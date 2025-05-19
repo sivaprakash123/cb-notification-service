@@ -1,49 +1,50 @@
 package com.igot.cb.util;
 
-
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Component
 @Getter
 @Setter
 public class CbServerProperties {
-    @Value("${redis.cache.enabled}")
-    private boolean redisCacheEnable;
-
-    @Value("${svgTemplate}")
-    private String svgTemplate;
-
-    @Value("${cios.read.api.base.url}")
-    private String baseUrl;
-
-    @Value("${cios.read.api.fixed.url}")
-    private String ciosReadApiUrl;
-
-    @Value("${kong.api.auth.token}")
-    private String token;
-
-    @Value("${spring.kafka.certificate.topic.name}")
-    private String certificateTopic;
-
-    @Value("${certificate.char.length}")
-    private int certificateCharLength;
-
-    @Value("${content.partner.read.api.url}")
-    private String contentPartnerReadApiUrl;
 
 
-    @Value("${content.partner.readby.partnercode.api.url}")
-    private String contentPartnerReadbyPartnerCodeApiUrl;
+  @Value("${redis.insights.index}")
+  private int redisInsightIndex;
 
-    @Value("${spring.kafka.cornell.topic.name}")
-    private String userProgressUpdateTopic;
+  @Value("${search.result.redis.ttl}")
+  private long searchResultRedisTtl;
 
-    @Value("${user.progress.send.from.partner.topic.name}")
-    private String userProgressSendFromPartner;
+  @Value("${sb.api.key}")
+  private String sbApiKey;
 
-    @Value("${maximum.allowed.limit}")
-    private int maximumAllowedLimit;
+  @Value("${http.client.request.factory.timeout}")
+  private int requestTimeoutMs;
+
+  @Value("${http.pooling.client.cm.max.total.connections}")
+  private int maxTotalConnections;
+
+  @Value("${http.pooling.client.cm.default.max.per.route}")
+  private int maxConnectionsPerRoute;
+
+  @Value("${redis.pool.max.total}")
+  private int redisPoolMaxTotal;
+
+  @Value("${redis.pool.max.idle}")
+  private int redisPoolMaxIdle;
+
+  @Value("${redis.pool.min.idle}")
+  private int redisPoolMinIdle;
+
+  @Value("${redis.pool.max.wait}")
+  private int redisPoolMaxWait;
+
+  @Value("${redis.connection.timeout}")
+  private long redisConnectionTimeout;
+
 }

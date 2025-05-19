@@ -1,7 +1,7 @@
 package com.igot.cb.health.controller;
 
 import com.igot.cb.health.service.HealthService;
-import com.igot.cb.util.dto.SBApiResponse;
+import com.igot.cb.util.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +17,7 @@ public class HealthController {
 
     @GetMapping("/health")
     public ResponseEntity<?> healthCheck() throws Exception {
-        SBApiResponse response = healthService.checkHealthStatus();
+        ApiResponse response = healthService.checkHealthStatus();
         return new ResponseEntity<>(response, response.getResponseCode());
     }
 

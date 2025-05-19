@@ -6,16 +6,14 @@ import com.igot.cb.authentication.util.AccessTokenValidator;
 import com.igot.cb.notification.enums.NotificationReadStatus;
 import com.igot.cb.notification.service.NotificationService;
 import com.igot.cb.transactional.cassandrautils.CassandraOperation;
+import com.igot.cb.util.ApiResponse;
 import com.igot.cb.util.Constants;
-import com.igot.cb.util.TransformUtility;
-import com.igot.cb.util.cache.CacheService;
-import com.igot.cb.util.dto.SBApiResponse;
-import com.igot.cb.util.exceptions.CustomException;
+import com.igot.cb.util.ProjectUtil;
 import io.micrometer.common.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,7 +23,9 @@ import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
 import static com.igot.cb.util.Constants.*;
+
 
 @Service
 @Slf4j
@@ -39,55 +39,52 @@ public class NotificationServiceImpl implements NotificationService {
     CassandraOperation cassandraOperation;
 
     @Autowired
-    private TransformUtility transformUtility;
-
-    @Autowired
-    CacheService cacheService;
-
-    @Autowired
     private ObjectMapper objectMapper;
 
+    private final Logger logger = LoggerFactory.getLogger(NotificationServiceImpl.class);
 
     @Override
-    public SBApiResponse createNotification(JsonNode userNotificationDetail, String token) {
-        log.info("NotificationService::CreateNotification: inside the method");
-        SBApiResponse response = transformUtility.createDefaultResponse(Constants.USER_NOTIFICATION_CREATE);
+    public ApiResponse createNotification(JsonNode userNotificationDetail, String authToken) {
+        log.info("NotificationService::createNotification: inside the method");
+        ApiResponse outgoingResponse = ProjectUtil.createDefaultResponse(Constants.USER_NOTIFICATION_CREATE);
 
         try {
-
-            Optional<String> userIdOptional = validateUser(token, response);
-            if (userIdOptional.isEmpty()) {
-                return response;
+            String userId = accessTokenValidator.fetchUserIdFromAccessToken(authToken);
+            if (StringUtils.isEmpty(userId)) {
+                updateErrorDetails(outgoingResponse, Constants.USER_ID_DOESNT_EXIST, HttpStatus.BAD_REQUEST);
+                return outgoingResponse;
             }
-
-            String userId = userIdOptional.get();
-            log.info("UserId from auth token {}", userId);
 
             ZoneId zoneId = ZoneId.of(UTC);
             Instant instant = LocalDateTime.now().atZone(zoneId).toInstant();
 
             Map<String, Object> dbMap = new HashMap<>();
-            dbMap.put(Constants.NOTIFICATION_ID, UUID.randomUUID().toString());
-            dbMap.put(USER_ID, userId);
-            dbMap.put(CREATED_AT, instant);
-            dbMap.put(UPDATED_AT, instant);
-            dbMap.put(IS_DELETED, false);
-            dbMap.put(READ, false);
-            dbMap.put(READ_AT, null);
+            dbMap.put(Constants.NOTIFICATION_ID, java.util.UUID.randomUUID().toString());
+            dbMap.put(Constants.USER_ID, userId);
+            dbMap.put(Constants.CREATED_AT, instant);
+            dbMap.put(Constants.UPDATED_AT, instant);
+            dbMap.put(Constants.IS_DELETED, false);
+            dbMap.put(Constants.READ, false);
+            dbMap.put(Constants.READ_AT, null);
 
-            JsonNode requestNode = userNotificationDetail.get(REQUEST);
+            JsonNode requestNode = userNotificationDetail.get(Constants.REQUEST);
             if (ObjectUtils.isNotEmpty(requestNode) && requestNode.isObject()) {
                 Iterator<Map.Entry<String, JsonNode>> fields = requestNode.fields();
                 while (fields.hasNext()) {
                     Map.Entry<String, JsonNode> entry = fields.next();
-                    dbMap.put(entry.getKey(), entry.getValue().asText());
+                    JsonNode valueNode = entry.getValue();
+                    if (valueNode.isValueNode()) {
+                        dbMap.put(entry.getKey(), valueNode.asText());
+                    } else {
+                        dbMap.put(entry.getKey(), valueNode.toString());
+                    }
                 }
             } else {
-                log.warn("Missing or invalid 'request' node in payload");
-                response.getParams().setMsg("Missing or invalid 'request' node in payload");
-                response.getParams().setStatus(Constants.FAILED);
-                response.setResponseCode(HttpStatus.BAD_REQUEST);
-                return response;
+                log.warn("Missing or invalid 'request' node: {}", userNotificationDetail.toString());
+                outgoingResponse.getParams().setErrMsg("Missing or invalid 'request' node in payload");
+                outgoingResponse.getParams().setStatus(Constants.FAILED);
+                outgoingResponse.setResponseCode(HttpStatus.BAD_REQUEST);
+                return outgoingResponse;
             }
 
             Object res = cassandraOperation.insertRecord(
@@ -98,44 +95,33 @@ public class NotificationServiceImpl implements NotificationService {
             log.info("Inserted notification: {}", res.toString());
 
             Map<String, Object> responseMap = new HashMap<>(dbMap);
-            responseMap.remove(IS_DELETED);
-            responseMap.remove(UPDATED_AT);
-            responseMap.remove(USER_ID);
-            responseMap.remove(READ_AT);
+            Map<String, Object> resultMap = prepareNotificationResponse(responseMap);
 
-            response.setResponseCode(HttpStatus.OK);
-            response.setResult(responseMap);
-
-            String notificationId = (String) responseMap.get(NOTIFICATION_ID);
-            if (StringUtils.isNotBlank(notificationId)) {
-                cacheService.putCache("notification:" + notificationId, response);
-            }
-
-            return response;
+            outgoingResponse.setResponseCode(HttpStatus.OK);
+            outgoingResponse.setResult(resultMap);
+            log.info("NotificationService::createNotification saved successfully");
 
         } catch (Exception e) {
-            String errMsg = "Error while performing operation: " + e.getMessage();
-            log.error(errMsg, e);
-            response.getParams().setMsg(errMsg);
-            response.getParams().setStatus(Constants.FAILED);
-            response.setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR);
-            return response;
+            log.error("Error while saving notification to Cassandra: {}", e.getMessage(), e);
+            updateErrorDetails(outgoingResponse, "Internal server error while saving notification data",
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
+
+        return outgoingResponse;
     }
 
 
     @Override
-    public SBApiResponse readByUserIdAndNotificationId(String notificationId, String token) {
+    public ApiResponse readByUserIdAndNotificationId(String notificationId, String authToken) {
         log.info("NotificationService::readByUserIdAndNotificationId: inside the method");
-        SBApiResponse response = transformUtility.createDefaultResponse(Constants.USER_NOTIFICATION_READ_NOTIFICATIONID);
+        ApiResponse outgoingResponse = ProjectUtil.createDefaultResponse(Constants.USER_NOTIFICATION_READ_NOTIFICATIONID);
 
         try {
-            Optional<String> userIdOptional = validateUser(token, response);
-            if (!userIdOptional.isPresent()) {
-                return response;
+            String userId = accessTokenValidator.fetchUserIdFromAccessToken(authToken);
+            if (StringUtils.isEmpty(userId)) {
+                updateErrorDetails(outgoingResponse, Constants.USER_ID_DOESNT_EXIST, HttpStatus.BAD_REQUEST);
+                return outgoingResponse;
             }
-
-            String userId = userIdOptional.get();
 
             List<Map<String, Object>> notifications = fetchNotifications(userId);
 
@@ -144,45 +130,37 @@ public class NotificationServiceImpl implements NotificationService {
                     .findFirst();
 
             if (match.isPresent()) {
-                Map<String, Object> resultMap = new HashMap<>(match.get());
-                resultMap.remove(IS_DELETED);
-                resultMap.remove(UPDATED_AT);
-                resultMap.remove(USER_ID);
-                resultMap.remove(READ_AT);
-                resultMap.remove(TEMPLATE_ID);
-                response.setResult(resultMap);
-                response.setResponseCode(HttpStatus.OK);
+                Map<String, Object> resultMap = prepareNotificationResponse(match.get());
+                outgoingResponse.setResult(resultMap);
+                outgoingResponse.setResponseCode(HttpStatus.OK);
             } else {
-                response.getParams().setMsg("Notification not found for this user.");
-                response.getParams().setStatus(Constants.SUCCESS);
-                response.setResponseCode(HttpStatus.OK);
+                outgoingResponse.getParams().setErrMsg("Notification not found for this user.");
+                outgoingResponse.getParams().setStatus(Constants.SUCCESS);
+                outgoingResponse.setResponseCode(HttpStatus.OK);
             }
-
-            return response;
+            logger.info("NotificationServiceImpl::readByUserIdAndNotificationId retrieved successfully ");
 
         } catch (Exception e) {
-            log.error("Error while processing notification read", e);
-            throw new CustomException(Constants.ERROR, e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            logger.error("Error while fetching readByUserIdAndNotificationId from Cassandra: {}", e.getMessage(), e);
+            updateErrorDetails(outgoingResponse, "Internal server error while fetching notification by userId",
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
+        return outgoingResponse;
     }
 
-
     @Override
-    public SBApiResponse readByUserIdAndLastXDaysNotifications(String token, int days, int page, int size, NotificationReadStatus status) {
+    public ApiResponse readByUserIdAndLastXDaysNotifications(String authToken, int days, int page, int size, NotificationReadStatus status) {
         log.info("NotificationService::readByUserIdAndLastXDaysNotifications: inside the method");
-        SBApiResponse response = transformUtility.createDefaultResponse(Constants.USER_NOTIFICATION_READ_N_DAYSID);
+        ApiResponse outgoingResponse = ProjectUtil.createDefaultResponse(Constants.USER_NOTIFICATION_READ_N_DAYSID);
 
         try {
-            Optional<String> userIdOptional = validateUser(token, response);
-            if (userIdOptional.isEmpty()) {
-                return response;
+            String userId = accessTokenValidator.fetchUserIdFromAccessToken(authToken);
+            if (StringUtils.isEmpty(userId)) {
+                updateErrorDetails(outgoingResponse, Constants.USER_ID_DOESNT_EXIST, HttpStatus.BAD_REQUEST);
+                return outgoingResponse;
             }
 
-            String userId = userIdOptional.get();
-            log.info("UserId from auth token {}", userId);
-
             Instant fromDate = ZonedDateTime.now(ZoneOffset.UTC).minusDays(days).toInstant();
-
 
             List<Map<String, Object>> userNotificationList = cassandraOperation.getRecordsByPropertiesWithoutFiltering(
                     Constants.KEYSPACE_SUNBIRD,
@@ -191,7 +169,6 @@ public class NotificationServiceImpl implements NotificationService {
                     List.of(NOTIFICATION_ID, CREATED_AT, TYPE, MESSAGE, READ, ROLE, SOURCE, CATEGORY),
                     MAX_NOTIFICATIONS_FETCH_FOR_READ
             );
-
 
             List<Map<String, Object>> filteredNotifications = userNotificationList.stream()
                     .filter(notification -> {
@@ -209,55 +186,59 @@ public class NotificationServiceImpl implements NotificationService {
                         }
                         return true;
                     })
-                    .collect(Collectors.toList());
-
+                    .toList();
 
             int total = filteredNotifications.size();
             int fromIndex = Math.min(page * size, total);
             int toIndex = Math.min(fromIndex + size, total);
             List<Map<String, Object>> paginated = filteredNotifications.subList(fromIndex, toIndex);
 
+            List<Map<String, Object>> processed = paginated.stream()
+                    .map(this::prepareNotificationResponse)
+                    .collect(Collectors.toList());
 
             Map<String, Object> resultMap = new HashMap<>();
-            resultMap.put(NOTIFICATIONS, paginated);
+            resultMap.put(NOTIFICATIONS, processed);
             resultMap.put(TOTAL, total);
             resultMap.put(PAGE, page);
             resultMap.put(SIZE, size);
             resultMap.put(HAS_NEXT_PAGE, toIndex < total);
 
-            response.setResponseCode(HttpStatus.OK);
-            response.setResult(resultMap);
-            return response;
+            outgoingResponse.setResponseCode(HttpStatus.OK);
+            outgoingResponse.setResult(resultMap);
+            logger.info("NotificationServiceImpl::readByUserIdAndLastXDaysNotifications list retrieved successfully");
 
         } catch (Exception e) {
-            log.error("Error while processing readByUserIdAndLastXDaysNotifications", e);
-            throw new CustomException(Constants.ERROR, e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            logger.error("Error while fetching readByUserIdAndLastXDaysNotifications from Cassandra: {}", e.getMessage(), e);
+            updateErrorDetails(outgoingResponse,
+                    "Internal server error while fetching readByUserIdAndLastXDaysNotifications list",
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
+
+        return outgoingResponse;
     }
 
+
     @Override
-    public SBApiResponse markNotificationsAsRead(String token, List<String> notificationIds) {
+    public ApiResponse markNotificationsAsRead(String authToken, List<String> notificationIds) {
         log.info("NotificationService::markNotificationsAsRead - ids: {}", notificationIds);
 
-        SBApiResponse response = transformUtility.createDefaultResponse(Constants.USER_NOTIFICATION_READ_UPDATEID);
+        ApiResponse outgoingResponse = ProjectUtil.createDefaultResponse(Constants.USER_NOTIFICATION_READ_UPDATEID);
 
-        Optional<String> userIdOptional = validateUser(token, response);
-        if (userIdOptional.isEmpty()) {
-            return response;
+        String userId = accessTokenValidator.fetchUserIdFromAccessToken(authToken);
+        if (StringUtils.isEmpty(userId)) {
+            updateErrorDetails(outgoingResponse, Constants.USER_ID_DOESNT_EXIST, HttpStatus.BAD_REQUEST);
+            return outgoingResponse;
         }
 
-        String userId = userIdOptional.get();
-        log.info("UserId from auth token {}", userId);
-
-        String errMsg = validateNotificationReadRequest(notificationIds, response);
+        String errMsg = validateNotificationReadRequest(notificationIds, outgoingResponse);
         if (StringUtils.isNotBlank(errMsg)) {
-            return response;
+            return outgoingResponse;
         }
 
         List<Map<String, Object>> updated = new ArrayList<>();
 
         try {
-            // Fetch user notifications
             List<Map<String, Object>> userNotifications = fetchNotifications(userId);
 
             for (String notificationId : notificationIds) {
@@ -271,9 +252,8 @@ public class NotificationServiceImpl implements NotificationService {
                     Object readValue = notification.get(READ);
 
                     boolean isCreatedAtPresent = ObjectUtils.isNotEmpty(createdAt);
-                    boolean isAlreadyRead = BooleanUtils.toBoolean((Boolean) readValue);
+                    boolean isAlreadyRead = org.apache.commons.lang3.BooleanUtils.toBoolean((Boolean) readValue);
 
-                    // Proceed only if the notification is not read and createdAt exists
                     if (isCreatedAtPresent && !isAlreadyRead) {
                         Instant readAt = Instant.now();
 
@@ -282,10 +262,10 @@ public class NotificationServiceImpl implements NotificationService {
                                 READ_AT, readAt
                         );
 
-                        // Use updateNotification method to perform the update
+
                         Map<String, Object> result = updateNotification(userId, notificationId, updateMap);
 
-                        // If update is successful, add it to the updated list
+
                         if (Constants.SUCCESS.equalsIgnoreCase((String) result.get(Constants.RESPONSE))) {
                             updated.add(Map.of(
                                     ID, notificationId,
@@ -299,40 +279,39 @@ public class NotificationServiceImpl implements NotificationService {
                 }
             }
 
-            response.getParams().setMsg("Notifications updated successfully");
-            response.getParams().setStatus(Constants.SUCCESS);
-            response.setResponseCode(HttpStatus.OK);
-            response.setResult(Map.of("notifications", updated));
-            return response;
+            outgoingResponse.getParams().setErrMsg("Notifications updated successfully");
+            outgoingResponse.getParams().setStatus(Constants.SUCCESS);
+            outgoingResponse.setResponseCode(HttpStatus.OK);
+            outgoingResponse.setResult(Map.of("notifications", updated));
+            logger.info("NotificationServiceImpl::markNotificationsAsRead  update successfully ");
 
         } catch (Exception e) {
-            log.error("Error in markNotificationsAsRead", e);
-            updateErrorDetails(response, HttpStatus.INTERNAL_SERVER_ERROR, "Error while updating notifications.");
-            return response;
+            logger.error("Error while fetching  markNotificationsAsRead update from Cassandra: {}", e.getMessage(), e);
+            updateErrorDetails(outgoingResponse, "Internal server error while fetching markNotificationsAsRead  update",
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+            return outgoingResponse;
         }
+        return outgoingResponse;
     }
 
 
     @Override
-    public SBApiResponse markNotificationsAsDeleted(String token, List<String> notificationIds) {
+    public ApiResponse markNotificationsAsDeleted(String authToken, List<String> notificationIds) {
         log.info("NotificationService::markNotificationsAsDeleted - ids: {}", notificationIds);
 
-        SBApiResponse response = transformUtility.createDefaultResponse(Constants.USER_NOTIFICATION_DELETE);
+        ApiResponse outgoingResponse = ProjectUtil.createDefaultResponse(Constants.USER_NOTIFICATION_DELETE);
         List<Map<String, Object>> updated = new ArrayList<>();
 
         try {
-            Optional<String> userIdOptional = validateUser(token, response);
-            if (userIdOptional.isEmpty()) {
-                return response;
+            String userId = accessTokenValidator.fetchUserIdFromAccessToken(authToken);
+            if (StringUtils.isEmpty(userId)) {
+                updateErrorDetails(outgoingResponse, Constants.USER_ID_DOESNT_EXIST, HttpStatus.BAD_REQUEST);
+                return outgoingResponse;
             }
 
-            String userId = userIdOptional.get();
-            log.info("UserId from auth token {}", userId);
-
-
-            String errMsg = validateNotificationReadRequest(notificationIds, response);
+            String errMsg = validateNotificationReadRequest(notificationIds, outgoingResponse);
             if (StringUtils.isNotBlank(errMsg)) {
-                return response;
+                return outgoingResponse;
             }
 
 
@@ -355,30 +334,33 @@ public class NotificationServiceImpl implements NotificationService {
                 }
             }
 
-            response.getParams().setMsg("Notifications marked as deleted successfully");
-            response.getParams().setStatus(Constants.SUCCESS);
-            response.setResponseCode(HttpStatus.OK);
-            response.setResult(Map.of(NOTIFICATIONS, updated));
+            outgoingResponse.getParams().setErrMsg("Notifications marked as deleted successfully");
+            outgoingResponse.getParams().setStatus(Constants.SUCCESS);
+            outgoingResponse.setResponseCode(HttpStatus.OK);
+            outgoingResponse.setResult(Map.of(NOTIFICATIONS, updated));
 
-            return response;
+            logger.info("NotificationServiceImpl::markNotificationsAsDeleted  delete successfully ");
 
         } catch (Exception e) {
-            log.error("Error in markNotificationsAsDeleted", e);
-            throw new CustomException(Constants.ERROR, e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            logger.error("Error while fetching  markNotificationsAsDeleted delete from Cassandra: {}", e.getMessage(), e);
+            updateErrorDetails(outgoingResponse, "Internal server error while fetching markNotificationsAsDeleted  delete",
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+            return outgoingResponse;
         }
+        return outgoingResponse;
     }
 
-    private String validateNotificationReadRequest(List<String> ids, SBApiResponse response) {
-        if (CollectionUtils.isEmpty(ids)) {
+    private String validateNotificationReadRequest(List<String> ids, ApiResponse response) {
+        if (org.springframework.util.CollectionUtils.isEmpty(ids)) {
             response.getParams().setStatus(Constants.FAILED);
-            response.getParams().setMsg("Request must contain a non-empty list of notification IDs.");
+            response.getParams().setErrMsg("Request must contain a non-empty list of notification IDs.");
             response.setResponseCode(HttpStatus.BAD_REQUEST);
             return "Request must contain a non-empty list of notification IDs.";
         }
 
         if (ids.size() > Constants.MAX_NOTIFICATION_READ_BATCH_SIZE) {
             response.getParams().setStatus(Constants.FAILED);
-            response.getParams().setMsg("You can only mark up to " + Constants.MAX_NOTIFICATION_READ_BATCH_SIZE + " notifications as read at a time.");
+            response.getParams().setErrMsg("You can only mark up to " + Constants.MAX_NOTIFICATION_READ_BATCH_SIZE + " notifications as read at a time.");
             response.setResponseCode(HttpStatus.BAD_REQUEST);
             return "You can only mark up to " + Constants.MAX_NOTIFICATION_READ_BATCH_SIZE + " notifications as read at a time.";
         }
@@ -386,10 +368,10 @@ public class NotificationServiceImpl implements NotificationService {
         return "";
     }
 
-    private void updateErrorDetails(SBApiResponse response, HttpStatus status, String message) {
+    private void updateErrorDetails(ApiResponse response, String errorMessage, HttpStatus httpStatus) {
         response.getParams().setStatus(Constants.FAILED);
-        response.getParams().setMsg(message);
-        response.setResponseCode(status);
+        response.getParams().setErrMsg(errorMessage);
+        response.setResponseCode(httpStatus);
     }
 
     private List<Map<String, Object>> fetchNotifications(String userId) {
@@ -405,16 +387,6 @@ public class NotificationServiceImpl implements NotificationService {
         );
     }
 
-    private Optional<String> validateUser(String token, SBApiResponse response) {
-        String userId = accessTokenValidator.verifyUserToken(token);
-        if (StringUtils.isBlank(userId) || userId.equalsIgnoreCase(Constants.UNAUTHORIZED)) {
-            response.getParams().setMsg(Constants.USER_ID_DOESNT_EXIST);
-            response.getParams().setStatus(Constants.FAILED);
-            response.setResponseCode(HttpStatus.BAD_REQUEST);
-            return Optional.empty();
-        }
-        return Optional.of(userId);
-    }
 
     private Map<String, Object> updateNotification(String userId, String notificationId, Map<String, Object> updateMap) {
         List<Map<String, Object>> records = fetchNotifications(userId);
@@ -432,7 +404,7 @@ public class NotificationServiceImpl implements NotificationService {
                     CREATED_AT, createdAt
             );
 
-            return cassandraOperation.updateRecord(
+            return cassandraOperation.updateRecordByCompositeKey(
                     Constants.KEYSPACE_SUNBIRD,
                     Constants.TABLE_USER_NOTIFICATION,
                     updateMap,
@@ -442,5 +414,32 @@ public class NotificationServiceImpl implements NotificationService {
         return Collections.emptyMap();
     }
 
+
+    public Map<String, Object> prepareNotificationResponse(Map<String, Object> dbRecord) {
+        Map<String, Object> resultMap = new HashMap<>(dbRecord);
+        List<String> fieldsToRemove = Arrays.asList(
+                Constants.IS_DELETED,
+                Constants.UPDATED_AT,
+                Constants.USER_ID,
+                Constants.READ_AT,
+                Constants.TEMPLATE_ID
+        );
+        fieldsToRemove.forEach(resultMap::remove);
+        Object messageObj = resultMap.get("message");
+
+        if (messageObj instanceof String && messageObj != null) {
+            try {
+                JsonNode parsed = objectMapper.readTree((String) messageObj);
+                resultMap.put("message", parsed);
+                log.info("Message successfully parsed into JSON: {}", parsed.toPrettyString());
+            } catch (Exception e) {
+                log.warn("Could not parse message field as JSON: {}", e.getMessage());
+            }
+        } else {
+            log.warn("Message field is not a valid string or is null.");
+        }
+
+        return resultMap;
+    }
 
 }

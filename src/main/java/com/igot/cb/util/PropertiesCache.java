@@ -9,8 +9,6 @@ import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * @author Mahesh RV
- * @author Ruksana
  * <p>
  * A utility class to cache and retrieve properties.
  * It loads properties from specified files and provides methods to access them.
