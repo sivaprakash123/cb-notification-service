@@ -1,5 +1,8 @@
 package com.igot.cb.util;
 
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.http.HttpStatus;
 
 import java.sql.Timestamp;
@@ -7,17 +10,24 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * @author Mahesh RV
- * @author Ruksana
- */
+
+@Getter
+@Setter
+@Data
 public class ApiResponse {
     private String id;
     private String ver;
     private String ts;
     private ApiRespParam params;
     private HttpStatus responseCode;
+    public Map<String, Object> getResult() {
+        return response;
+    }
+    public void put(String key, Object vo) {
+        response.put(key, vo);
+    }
 
+    @Getter(lombok.AccessLevel.NONE)
     private transient Map<String, Object> response = new HashMap<>();
 
     public ApiResponse() {
@@ -31,68 +41,11 @@ public class ApiResponse {
         this.id = id;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getVer() {
-        return ver;
-    }
-
-    public void setVer(String ver) {
-        this.ver = ver;
-    }
-
-    public String getTs() {
-        return ts;
-    }
-
-    public void setTs(String ts) {
-        this.ts = ts;
-    }
-
-    public ApiRespParam getParams() {
-        return params;
-    }
-
-    public void setParams(ApiRespParam params) {
-        this.params = params;
-    }
-
-    public HttpStatus getResponseCode() {
-        return responseCode;
-    }
-
-    public void setResponseCode(HttpStatus responseCode) {
-        this.responseCode = responseCode;
-    }
-
-    public Map<String, Object> getResult() {
-        return response;
+    public Object get(String key) {
+        return response.get(key);
     }
 
     public void setResult(Map<String, Object> result) {
         response = result;
     }
-
-    public Object get(String key) {
-        return response.get(key);
-    }
-
-    public void put(String key, Object vo) {
-        response.put(key, vo);
-    }
-
-    public void putAll(Map<String, Object> map) {
-        response.putAll(map);
-    }
-
-    public boolean containsKey(String key) {
-        return response.containsKey(key);
-    }
-
 }

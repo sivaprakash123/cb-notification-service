@@ -3,8 +3,8 @@ package com.igot.cb.notification.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.igot.cb.notification.enums.NotificationReadStatus;
 import com.igot.cb.notification.service.NotificationService;
+import com.igot.cb.util.ApiResponse;
 import com.igot.cb.util.Constants;
-import com.igot.cb.util.dto.SBApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,15 +25,15 @@ public class NotificationController {
     NotificationService notificationService;
 
     @PostMapping("/create")
-    public ResponseEntity<SBApiResponse> createNotification(@RequestBody JsonNode userNotificationDetail,
-                                                            @RequestHeader(Constants.X_AUTH_TOKEN) String token) {
-        SBApiResponse response = notificationService.createNotification(userNotificationDetail, token);
+    public ResponseEntity<ApiResponse> createNotification(@RequestBody JsonNode userNotificationDetail,
+                                                          @RequestHeader(Constants.X_AUTH_TOKEN) String token) {
+        ApiResponse response = notificationService.createNotification(userNotificationDetail, token);
         return new ResponseEntity<>(response, response.getResponseCode());
     }
 
     @GetMapping("/readby/{notificationId}")
     public ResponseEntity<?> readByUserIdAndNotificationId(@PathVariable String notificationId, @RequestHeader(Constants.X_AUTH_TOKEN) String token) {
-        SBApiResponse response = notificationService.readByUserIdAndNotificationId(notificationId, token);
+        ApiResponse response = notificationService.readByUserIdAndNotificationId(notificationId, token);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -46,7 +46,7 @@ public class NotificationController {
             @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_PAGE_SIZE + "") int size,
             @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_READ_STATUS) NotificationReadStatus status) {
 
-        SBApiResponse response = notificationService.readByUserIdAndLastXDaysNotifications(token, days, page, size, status);
+        ApiResponse response = notificationService.readByUserIdAndLastXDaysNotifications(token, days, page, size, status);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -57,7 +57,7 @@ public class NotificationController {
             @RequestBody Map<String, Object> requestBody) {
 
         List<String> ids = (List<String>) ((Map<String, Object>) requestBody.get(REQUEST)).get(IDS);
-        SBApiResponse response = notificationService.markNotificationsAsRead(token, ids);
+        ApiResponse response = notificationService.markNotificationsAsRead(token, ids);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -67,7 +67,7 @@ public class NotificationController {
             @RequestBody Map<String, Object> requestBody) {
 
         List<String> ids = (List<String>) ((Map<String, Object>) requestBody.get(REQUEST)).get(IDS);
-        SBApiResponse response = notificationService.markNotificationsAsDeleted(token, ids);
+        ApiResponse response = notificationService.markNotificationsAsDeleted(token, ids);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
