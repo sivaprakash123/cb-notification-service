@@ -28,10 +28,9 @@ public class FileProcessService {
       throw new RuntimeException(e.getMessage());
     }
   }
-
   private List<Map<String, String>> validateFileAndProcessRows(MultipartFile file) {
     log.info("DesignationServiceImpl::validateFileAndProcessRows");
-    log.info("DesignationServiceImpl::validateFileAndProcessRows");
+
     String fileName = file.getOriginalFilename();
     if (fileName == null) {
       throw new RuntimeException("File name is null");
@@ -39,9 +38,10 @@ public class FileProcessService {
 
     try (InputStream inputStream = file.getInputStream()) {
       if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
-        Workbook workbook = WorkbookFactory.create(inputStream);
-        Sheet sheet = workbook.getSheetAt(0);
-        return processSheetAndSendMessage(sheet);
+        try (Workbook workbook = WorkbookFactory.create(inputStream)) {
+          Sheet sheet = workbook.getSheetAt(0);
+          return processSheetAndSendMessage(sheet);
+        }
       } else if (fileName.endsWith(".csv")) {
         return processCsvAndSendMessage(inputStream);
       } else {
@@ -49,7 +49,7 @@ public class FileProcessService {
       }
     } catch (IOException e) {
       log.error("Error while processing file: {}", e.getMessage());
-      throw new RuntimeException(e.getMessage());
+      throw new RuntimeException("Error processing file", e);
     }
   }
 
