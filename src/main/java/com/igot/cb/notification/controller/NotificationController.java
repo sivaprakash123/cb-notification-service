@@ -17,7 +17,7 @@ import static com.igot.cb.util.Constants.IDS;
 import static com.igot.cb.util.Constants.REQUEST;
 
 @RestController
-@RequestMapping("/api/notifications")
+@RequestMapping("/v1/notifications")
 public class NotificationController {
 
 
