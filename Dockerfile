@@ -1,7 +1,0 @@
-FROM openjdk:17-slim
-
-RUN apt update && apt install maven -y
-
-COPY . /opt
-WORKDIR /opt
-RUN mvn clean install
