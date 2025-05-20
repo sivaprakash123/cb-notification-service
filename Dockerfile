@@ -12,6 +12,6 @@ RUN apt-get update \
         xz-utils
 
 
-COPY cb-notification-service-0.0.1-SNAPSHOT.jar /opt/
+COPY cb-notification-service-1.0-SNAPSHOT.jar /opt/
 #HEALTHCHECK --interval=30s --timeout=30s CMD curl --fail http://localhost:7001/actuator/health || exit 1
-CMD ["/bin/bash", "-c", "java -XX:+PrintFlagsFinal $JAVA_OPTIONS -XX:+UnlockExperimentalVMOptions -jar /opt/cb-notification-service-0.0.1-SNAPSHOT.jar"]
+CMD ["/bin/bash", "-c", "java -XX:+PrintFlagsFinal $JAVA_OPTIONS -XX:+UnlockExperimentalVMOptions -jar /opt/cb-notification-service-1.0-SNAPSHOT.jar"]
