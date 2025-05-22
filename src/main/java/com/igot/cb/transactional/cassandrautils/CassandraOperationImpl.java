@@ -1,10 +1,7 @@
 package com.igot.cb.transactional.cassandrautils;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
@@ -103,6 +100,36 @@ public class CassandraOperationImpl implements CassandraOperation {
         }
         return response;
     }
+
+    @Override
+    public Object insertBulkRecord(String keyspaceName, String tableName, List<Map<String, Object>> requestList) {
+        ApiResponse response = new ApiResponse();
+        try {
+            CqlSession session = connectionManager.getSession(keyspaceName);
+            // Use a batch to insert multiple records
+            BatchStatementBuilder batchBuilder = BatchStatement.builder(DefaultBatchType.UNLOGGED);
+
+            // Loop through the list and prepare a statement for each map
+            for (Map<String, Object> request : requestList) {
+                String query = CassandraUtil.getPreparedStatement(keyspaceName, tableName, request);
+                PreparedStatement statement = session.prepare(query);
+                BoundStatement boundStatement = statement.bind(request.values().toArray());
+                batchBuilder.addStatement(boundStatement);
+            }
+
+            // Execute the batch of insert statements
+            BatchStatement batchStatement = batchBuilder.build();
+            session.execute(batchStatement);
+            response.put(Constants.RESPONSE, Constants.SUCCESS);
+        } catch (Exception e) {
+            String errMsg = String.format("Exception occurred while inserting records into %s: %s", tableName, e.getMessage());
+            logger.error("Error inserting records into {}: {}", tableName, e.getMessage());
+            response.put(Constants.RESPONSE, Constants.FAILED);
+            response.put(Constants.ERROR_MESSAGE, errMsg);
+        }
+        return response;
+    }
+
 
     @Override
     public List<Map<String, Object>> getRecordsByPropertiesWithoutFiltering(String keyspaceName, String tableName, Map<String, Object> propertyMap, List<String> fields, Integer limit) {

@@ -158,10 +158,10 @@ public class Constants {
     public static final String UNDER_SCORE = "_";
     public static final String BOOKMARK_ALREADY_AVAILABLE = "Bookmark already available for the orgId: {0} and category: {1}, please update the bookmark.";
     public static final String TOTAL_COUNT = "totalCount";
-    public static final String TABLE_EMAIL_TEMPLATE ="email_template";
+    public static final String TABLE_EMAIL_TEMPLATE = "email_template";
     public static final String TEMPLATE = "template";
     public static final String EMAIL = "email";
-    public static final String MDO_NAME="mdoName";
+    public static final String MDO_NAME = "mdoName";
     public static final String EMAIL_ID_LIST = "emailIdList";
     public static final String COMPETENCY_AREA = "competency area";
     public static final String COMPETENCY_AREA_PARAM = "competency_area";
@@ -182,7 +182,7 @@ public class Constants {
     public static final String CONFIG = "config";
     public static final String PARAMS = "params";
     public static final String MDO = "mdo";
-    public static final String COMPETENCIES ="competencies";
+    public static final String COMPETENCIES = "competencies";
     public static final String CONTENT_TYPE = "Content-Type";
     public static final String APPLICATION_JSON = "application/json";
     public static final String PROFILE_DETAILS_PRIMARY_EMAIL = "profileDetails.personalDetails.primaryEmail";
@@ -194,51 +194,51 @@ public class Constants {
     public static final String SUB_THEME = "sub_theme";
     public static final String PREFERRED_PROVIDER = "preferredProvider";
     public static final String DEMAND_TAG = "#demandId";
-    public static final String MDO_NAME_TAG= "#mdoName";
+    public static final String MDO_NAME_TAG = "#mdoName";
     public static final String PREFERRED_MAIL_BODY = "You have been preferred to create content for the request with ID #demandId from #mdoName. Please review the request details and show your interest.";
     public static final String INVALID_DEMAND_MAIL_BODY_MDO = "Your recent request with ID #demandId has been marked as invalid. Please reach out for further clarification.";
-    public static final String DEMAND_INVALID_SUB ="Invalid Request #demandId.";
-    public static final String DEMAND_ASSIGNED_SUB ="Request Assigned #demandId.";
-    public static final String SINGLE ="Single";
+    public static final String DEMAND_INVALID_SUB = "Invalid Request #demandId.";
+    public static final String DEMAND_ASSIGNED_SUB = "Request Assigned #demandId.";
+    public static final String SINGLE = "Single";
     public static final String BODY = "body";
     public static final String INVALID = "Invalid";
-    public static final String ASSIGNED_MAIL_BODY_TO_MDO  = "Your request with ID #demandId has been assigned to #contentProviderName. They will be handling your content needs.";
+    public static final String ASSIGNED_MAIL_BODY_TO_MDO = "Your request with ID #demandId has been assigned to #contentProviderName. They will be handling your content needs.";
     public static final String ASSIGNED_MAIL_BODY_TO_CBP = "You have been assigned to create content for the request with ID #demandId from #mdoName . Please review the request details and proceed with the content creation process.";
     public static final String IS_SPV_REQUEST = "isSpvRequest";
     public static final String CONTENT_PROVIDER_NAME_TAG = "#contentProviderName";
-    public static final String SPV_ADMIN ="SPV_ADMIN";
+    public static final String SPV_ADMIN = "SPV_ADMIN";
     public static final String ROLES = "roles";
     public static final String INTEREST_ID_MISSING = "InterestId is not present";
     public static final String DEMAND_ID_MISSING = "DemandId is not present";
-    public static final String PROVIDER_ID_TO_VALIDATE= "providerIdsToValidate";
-    public static final String ASSIGNED_PROVIDER_ID= "assignedProviderId";
-    public static final String CONTENT_ID= "contentId";
-    public static final String IN_PROGRESS= "InProgress";
+    public static final String PROVIDER_ID_TO_VALIDATE = "providerIdsToValidate";
+    public static final String ASSIGNED_PROVIDER_ID = "assignedProviderId";
+    public static final String CONTENT_ID = "contentId";
+    public static final String IN_PROGRESS = "InProgress";
     public static final String SEARCHTAGS = "searchTags";
     public static final String OWNER_ORG_NAME = "ownerOrgName";
-    public static final String CIOS_INDEX_NAME= "cios_content_entity";
+    public static final String CIOS_INDEX_NAME = "cios_content_entity";
     public static final String ID_PREFIX = "ext_";
     public static final String LAST_UPDATED_ON = "lastUpdatedOn";
     public static final String COMPETENCY = "competencyArea";
     public static final Boolean ACTIVE_STATUS_FALSE = false;
     public static final String OWNER_NAME = "ownerName";
-    public static final String INTEREST_ORG_SET ="interestOrgSet";
+    public static final String INTEREST_ORG_SET = "interestOrgSet";
     public static final String SEARCH_OPERATION_LESS_THAN = "<";
     public static final String SEARCH_OPERATION_GREATER_THAN = ">";
     public static final String SEARCH_OPERATION_LESS_THAN_EQUALS = "<=";
     public static final String SEARCH_OPERATION_GREATER_THAN_EQUALS = ">=";
     public static final String EXPIRED_ON = "expiredOn";
-    public static final String MUST= "must";
-    public static final String FILTER= "filter";
-    public static final String MUST_NOT="must_not";
-    public static final String SHOULD= "should";
-    public static final String BOOL="bool";
-    public static final String TERM="term";
-    public static final String TERMS="terms";
-    public static final String MATCH="match";
-    public static final String RANGE="range";
-    public static final String UNSUPPORTED_QUERY="Unsupported query type";
-    public static final String UNSUPPORTED_RANGE= "Unsupported range condition";
+    public static final String MUST = "must";
+    public static final String FILTER = "filter";
+    public static final String MUST_NOT = "must_not";
+    public static final String SHOULD = "should";
+    public static final String BOOL = "bool";
+    public static final String TERM = "term";
+    public static final String TERMS = "terms";
+    public static final String MATCH = "match";
+    public static final String RANGE = "range";
+    public static final String UNSUPPORTED_QUERY = "Unsupported query type";
+    public static final String UNSUPPORTED_RANGE = "Unsupported range condition";
     public static final String FACETS = "facets";
     public static final String COUNT = "count";
     public static final String ORG = "org";
@@ -274,15 +274,15 @@ public class Constants {
     public static final String WF_IF = "wfId";
     public static final String INITIATIVE = "INITIATE";
     public static final String UPDATED_BY = "updatedBy";
-    public static final String  COMPETENCY_TYPE = "Competency Type";
+    public static final String COMPETENCY_TYPE = "Competency Type";
     public static final String THEME_TYPE = "themeType";
     public static final String COMPETENCY_AREA_VALIDATION_FILE_JSON = "/payloadValidation/competencyAreaPayloadValidation.json";
     public static final String CIOS_CONTENT_VALIDATION_FILE_JSON = "/payloadValidation/ciosContentValidation.json";
     public static final String API_COMPETENCY_THEME_CREATE = "api.competency.theme.create";
     public static final String API_COMPETENCY_SUB_THEME_CREATE = "api.competency.sub.theme.create";
     public static final String API_ORG_CREATE = "api.org.create";
-    public static final String MDO_ADMIN ="MDO_ADMIN";
-    public static final String FRAMEWORKID  = "frameworkid";
+    public static final String MDO_ADMIN = "MDO_ADMIN";
+    public static final String FRAMEWORKID = "frameworkid";
     public static final String X_CHANNEL_ID = "X-Channel-Id";
     public static final String UPDATE = "UPDATE ";
     public static final String SET = " SET ";
@@ -297,14 +297,14 @@ public class Constants {
     public static final String MASTER = "master";
     public static final String CONTENT_PROVIDER_INDEX_NAME = "content_provider";
     public static final String CONTENT_PARTNER = "contentPartner";
-    public static final String CATEGORIES  = "categories";
+    public static final String CATEGORIES = "categories";
     public static final String ASSOCIATIONS = "associations";
     public static final String PREV_TERM_CODE = "previousTermCode";
     public static final String PARENT_CATEGORY = "previousCategoryCode";
     public static final String FRAMEWORK_STATUS = "frameworkstatus";
     public static final String COMPLETED = "Completed";
     public static final String FRAMEWORK_PUBLISH_WAIT_MSG = "Framework creation request has been published Awaiting processing.";
-    public static final String FRAMEWORK_PROCESS_ALREADY_INITIALISED ="Already this framework creation request is initialised";
+    public static final String FRAMEWORK_PROCESS_ALREADY_INITIALISED = "Already this framework creation request is initialised";
     public static final String API_PARTNER_CREATE = "api.partner.create";
     public static final String API_PARTNER_UPDATE = "api.partner.update";
     public static final String API_PARTNER_READ = "api.partner.read";
@@ -315,7 +315,7 @@ public class Constants {
     public static final String TERM_CREATION_NOT_POSSIBLE = "Term creation failed. A term with the reference ID already exists. Please use a unique reference ID.";
     public static final String NO_DATA_FOR_ID = "No data found for this Id: ";
     public static final String ID_MISSING = "Id is missing in the request";
-    public static final String MDO_LEADER ="MDO_LEADER";
+    public static final String MDO_LEADER = "MDO_LEADER";
     public static final String COMPETENCIESVALIDATION_FILE_JSON = "/payloadValidation/competenciesValidation.json";
     public static final String TIMESTAMP = "timeStamp";
     public static final String IS_AUTHENTICATE = "isAuthenticate";
@@ -331,7 +331,7 @@ public class Constants {
     public static final String CONTENT_PARTNER_FILE_JSON = "/payloadValidation/contentpartnervalidationfile.json";
     public static final String DOCUMENT_UPLOADED_DATE = "documentUploadedDate";
     public static final String EXTERNAL_ID = "externalId";
-    public static final String FILTER_CRITERIA_MAP= "filterCriteriaMap";
+    public static final String FILTER_CRITERIA_MAP = "filterCriteriaMap";
     public static final String REQUESTED_FIELDS = "requestedFields";
     public static final String PAGE_NUMBER = "pageNumber";
     public static final String PAGE_SIZE = "pageSize";
@@ -339,19 +339,19 @@ public class Constants {
     public static final String VALUE = "value";
     public static final String COMPETENCIES_V6 = "competencies_v6";
     public static final String COMPETENCIES_V6_VALIDATION_FILE_JSON = "/payloadValidation/competenciesV6Validation.json";
-    public static final String SPV_PUBLISHER ="SPV_PUBLISHER";
+    public static final String SPV_PUBLISHER = "SPV_PUBLISHER";
     public static final String CONTENT_PARTNER_NAME = "contentPartnerName";
     public static final String CONTENT_PARTNER_CODE_AND_NAME_ALREADY_PRESENT = "Content partnerCode and partnerName already present in DB";
     public static final String CONTENT_PARTNER_NAME_ALREADY_PRESENT = "Content partnerName already present in DB";
     public static final String CONTENT_PARTNER_CODE_ALREADY_PRESENT = "Content partnerCode already present in DB";
     public static final String PROVIDER_TIPS = "providerTips";
     public static final String DATA_NOT_PRESENT = "Data not present in DB With given ID";
-    public static final String TRANSFORM_CONTENT_JSON ="trasformContentJson";
-    public static final String TRANSFORM_PROGRESS_JSON ="transformProgressJson";
-    public static final String CERTIFICATE_TEMPLATE_URL ="certificateTemplateUrl";
-    public static final String SERVICE_REGISTRY_DETAILS ="serviceRegistryDetails";
+    public static final String TRANSFORM_CONTENT_JSON = "trasformContentJson";
+    public static final String TRANSFORM_PROGRESS_JSON = "transformProgressJson";
+    public static final String CERTIFICATE_TEMPLATE_URL = "certificateTemplateUrl";
+    public static final String SERVICE_REGISTRY_DETAILS = "serviceRegistryDetails";
     public static final String CONTENT_FILE_VALIDATION = "contentFileValidation";
-    public static final String TRANSFORM_CONTENT_VIA_API ="transformContentViaApi";
+    public static final String TRANSFORM_CONTENT_VIA_API = "transformContentViaApi";
     public static final String TRANSFORM_PROGRESS_VIA_API = "transformProgressViaApi";
     public static final String API_GET_STATE_LIST = "api.get.statelist";
     public static final String API_GET_DISTRICT_LIST = "api.get.districtlist";
@@ -380,8 +380,6 @@ public class Constants {
     public static final String PROFILE_DETAILS_LOWERCASE = "profiledetails";
 
 
-
-
     public static final int HTTP_CLIENT_TIMEOUT_MS = 45000;
     public static final int HTTP_CLIENT_MAX_TOTAL_CONNECTIONS = 2000;
     public static final int HTTP_CLIENT_MAX_CONNECTIONS_PER_ROUTE = 500;
@@ -399,7 +397,7 @@ public class Constants {
     public static final String TYPE = "type";
     public static final String MESSAGE = "message";
     public static final String ROLE = "role";
-   public static final String SOURCE = "source";
+    public static final String SOURCE = "source";
     public static final String CATEGORY = "category";
     public static final String NOTIFICATIONS = "notifications";
     public static final String TOTAL = "total";
@@ -416,14 +414,23 @@ public class Constants {
     public static final String DEFAULT_NOTIFICATION_READ_STATUS = "BOTH";
 
 
-    public static final String USER_NOTIFICATION_CREATE="notification.v1.create";
+    public static final String USER_NOTIFICATION_CREATE = "notification.v1.create";
+    public static final String USER_NOTIFICATION_BULK_CREATE = "notification.v1.bulk.create";
     public static final String TABLE_USER_NOTIFICATION = "notifications";
-    public static final String USER_NOTIFICATION_READ_NOTIFICATIONID="notification.v1.readby.useridnotificationid";
-    public static final String USER_NOTIFICATION_READ_N_DAYSID="notification.v1.readby.ndays";
-    public static final String USER_NOTIFICATION_READ_UPDATEID="notification.v1.update.notificationid";
-    public static final  String USER_NOTIFICATION_DELETE ="notification.v1.delete.notificationid";
-    public static final Integer MAX_NOTIFICATION_READ_BATCH_SIZE =20;
-
+    public static final String USER_NOTIFICATION_READ_NOTIFICATIONID = "notification.v1.readby.useridnotificationid";
+    public static final String USER_NOTIFICATION_READ_N_DAYSID = "notification.v1.readby.ndays";
+    public static final String USER_NOTIFICATION_READ_UPDATEID = "notification.v1.update.notificationid";
+    public static final String USER_NOTIFICATION_DELETE = "notification.v1.delete.notificationid";
+    public static final String USEE_NOTIFICATION_UNREAD_COUNT = "notification.v1.unread.count";
+    public static final Integer MAX_NOTIFICATION_READ_BATCH_SIZE = 20;
+    public static final String ALL = "all";
+    public static final String UNREAD = "unread";
+    public static final String TOTAL_READ = "totalRead";
+    public static final String TOTAL_UNREAD = "totalUnread";
+    public static final String CATEGORY_STATS = "categoryStats";
+    public static final String INDIVIDUAL = "individual";
+    public static final int MAX_USER_LIMIT = 100;
+    public static final String USER_IDS = "user_ids";
 
 
     public static final String API_HEALTH_CHECK = "api.health.check";
@@ -432,7 +439,6 @@ public class Constants {
     public static final String CASSANDRA_DB = "cassandra db";
     public static final String REDIS_CACHE = "redis cache";
     public static final String TABLE_SYSTEM_SETTINGS = "system_settings";
-
 
 
     private Constants() {

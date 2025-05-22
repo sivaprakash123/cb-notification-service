@@ -1,5 +1,7 @@
 package com.igot.cb.transactional.cassandrautils;
 
+import com.igot.cb.util.ApiResponse;
+
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +33,17 @@ public interface CassandraOperation {
      * @return An object representing the result of the insertion operation.
      */
     public Object insertRecord(String keyspaceName, String tableName, Map<String, Object> request);
+
+
+    /**
+     * Insert bulk data using batch
+     *
+     * @param keyspaceName String
+     * @param tableName    String
+     * @param request      List<Map<String, Object>>
+     * @return SBApiResponse
+     */
+    public Object insertBulkRecord(String keyspaceName, String tableName, List<Map<String, Object>> request);
 
     public List<Map<String, Object>> getRecordsByPropertiesWithoutFiltering(String keyspaceName, String tableName,
                                                                             Map<String, Object> propertyMap, List<String> fields, Integer limit);

@@ -13,13 +13,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-import static com.igot.cb.util.Constants.IDS;
-import static com.igot.cb.util.Constants.REQUEST;
+import static com.igot.cb.util.Constants.*;
 
 @RestController
 @RequestMapping("/v1/notifications")
 public class NotificationController {
-
 
     @Autowired
     NotificationService notificationService;
@@ -28,6 +26,13 @@ public class NotificationController {
     public ResponseEntity<ApiResponse> createNotification(@RequestBody JsonNode userNotificationDetail,
                                                           @RequestHeader(Constants.X_AUTH_TOKEN) String token) {
         ApiResponse response = notificationService.createNotification(userNotificationDetail, token);
+        return new ResponseEntity<>(response, response.getResponseCode());
+    }
+
+    @PostMapping("/bulk/create")
+    public ResponseEntity<ApiResponse> createBulkNotification(
+            @RequestBody JsonNode userNotificationDetail) {
+        ApiResponse response = notificationService.bulkCreateNotifications(userNotificationDetail);
         return new ResponseEntity<>(response, response.getResponseCode());
     }
 
@@ -44,9 +49,10 @@ public class NotificationController {
             @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_DAYS + "") int days,
             @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_PAGE + "") int page,
             @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_PAGE_SIZE + "") int size,
-            @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_READ_STATUS) NotificationReadStatus status) {
+            @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_READ_STATUS) NotificationReadStatus status,
+            @RequestParam(required = false) String category) {
 
-        ApiResponse response = notificationService.readByUserIdAndLastXDaysNotifications(token, days, page, size, status);
+        ApiResponse response = notificationService.getNotificationsByUserIdAndLastXDays(token, days, page, size, status, category);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -56,10 +62,11 @@ public class NotificationController {
             @RequestHeader(Constants.X_AUTH_TOKEN) String token,
             @RequestBody Map<String, Object> requestBody) {
 
-        List<String> ids = (List<String>) ((Map<String, Object>) requestBody.get(REQUEST)).get(IDS);
-        ApiResponse response = notificationService.markNotificationsAsRead(token, ids);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        Map<String, Object> request = (Map<String, Object>) requestBody.get(REQUEST);
+        ApiResponse response = notificationService.markNotificationsAsRead(token, request);
+        return ResponseEntity.ok(response);
     }
+
 
     @DeleteMapping("/delete")
     public ResponseEntity<?> markNotificationsAsDeleted(
@@ -70,4 +77,15 @@ public class NotificationController {
         ApiResponse response = notificationService.markNotificationsAsDeleted(token, ids);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
+    @GetMapping("/unread/count")
+    public ResponseEntity<?> getUnreadNotificationCount(
+            @RequestHeader(Constants.X_AUTH_TOKEN) String token,
+            @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_DAYS + "") int days) {
+
+        ApiResponse response = notificationService.getUnreadNotificationCount(token, days);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+
 }
