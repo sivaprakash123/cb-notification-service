@@ -3,6 +3,7 @@ package com.igot.cb.notification.service.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.igot.cb.authentication.util.AccessTokenValidator;
+import com.igot.cb.notification.enums.NotificationReadStatus;
 import com.igot.cb.transactional.cassandrautils.CassandraOperation;
 import com.igot.cb.util.ApiResponse;
 import com.igot.cb.util.Constants;
@@ -165,17 +166,6 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void testMarkNotificationsAsRead_EmptyList() {
-        String authToken = "Bearer abc";
-        String userId = "user-1";
-        when(accessTokenValidator.fetchUserIdFromAccessToken(authToken)).thenReturn(userId);
-
-        ApiResponse response = notificationService.markNotificationsAsRead(authToken, Collections.emptyList());
-        assertEquals(HttpStatus.BAD_REQUEST, response.getResponseCode());
-        assertEquals(Constants.FAILED, response.getParams().getStatus());
-        assertTrue(response.getParams().getErrMsg().contains("non-empty list"));
-    }
-    @Test
     void testMarkNotificationsAsDeleted_TooManyIds() {
         String authToken = "Bearer abc";
         String userId = "user-1";
@@ -210,4 +200,185 @@ class NotificationServiceImplTest {
         assertNull(result.get("message"));
     }
 
+    @Test
+    void testBulkCreateNotifications_success() throws Exception {
+        // Prepare input JSON with two user_ids
+        String payload = "{ \"request\": { " +
+                "\"type\": \"comment\"," +
+                "\"category\": \"content\"," +
+                "\"source\": \"userCreated\"," +
+                "\"role\": \"user\"," +
+                "\"message\": { \"text\": \"Bulk notification\" }," +
+                "\"user_ids\": [\"user1\", \"user2\"]" +
+                "} }";
+
+        ObjectMapper realMapper = new ObjectMapper();
+        JsonNode userNotificationDetail = realMapper.readTree(payload);
+
+        // Mock cassandraOperation.insertBulkRecord to return success
+        when(cassandraOperation.insertBulkRecord(
+                anyString(), anyString(), anyList()))
+                .thenReturn(Map.of("response", "SUCCESS"));
+
+        // Mock prepareNotificationResponse to just return the input map (for simplicity)
+        NotificationServiceImpl spyService = Mockito.spy(notificationService);
+        doAnswer(invocation -> invocation.getArgument(0)).when(spyService).prepareNotificationResponse(any());
+
+        ApiResponse response = spyService.bulkCreateNotifications(userNotificationDetail);
+
+        assertEquals(HttpStatus.OK, response.getResponseCode());
+        assertNotNull(response.getResult());
+        Map<String, Object> result = (Map<String, Object>) response.getResult();
+        assertTrue(result.containsKey("notifications"));
+        List<Map<String, Object>> notifications = (List<Map<String, Object>>) result.get("notifications");
+        assertEquals(2, notifications.size());
+        assertEquals("user1", notifications.get(0).get(Constants.USER_ID));
+        assertEquals("user2", notifications.get(1).get(Constants.USER_ID));
+    }
+
+    @Test
+    void testBulkCreateNotifications_missingRequest() throws Exception {
+        String payload = "{}";
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode userNotificationDetail = mapper.readTree(payload);
+
+        ApiResponse response = notificationService.bulkCreateNotifications(userNotificationDetail);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getResponseCode());
+        assertEquals("Missing or invalid 'request' node in payload", response.getParams().getErrMsg());
+        assertEquals(Constants.FAILED, response.getParams().getStatus());
+    }
+
+    @Test
+    void testBulkCreateNotifications_missingUserIds() throws Exception {
+        String payload = "{ \"request\": { \"type\": \"comment\" } }";
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode userNotificationDetail = mapper.readTree(payload);
+
+        ApiResponse response = notificationService.bulkCreateNotifications(userNotificationDetail);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getResponseCode());
+        assertEquals("'user_ids' must be a non-empty list", response.getParams().getErrMsg());
+        assertEquals(Constants.FAILED, response.getParams().getStatus());
+    }
+
+    @Test
+    void testBulkCreateNotifications_tooManyUserIds() throws Exception {
+        // Build user_ids array > MAX_USER_LIMIT (100)
+        int limit = 101;
+        StringBuilder userIdsJson = new StringBuilder("[");
+        for (int i = 0; i < limit; i++) {
+            if (i > 0) userIdsJson.append(",");
+            userIdsJson.append("\"user").append(i).append("\"");
+        }
+        userIdsJson.append("]");
+        String payload = "{ \"request\": { \"type\": \"comment\", \"user_ids\": " + userIdsJson + " } }";
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode userNotificationDetail = mapper.readTree(payload);
+
+        ApiResponse response = notificationService.bulkCreateNotifications(userNotificationDetail);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getResponseCode());
+        assertTrue(response.getParams().getErrMsg().contains("Cannot send notifications to more than 100 users"));
+        assertEquals(Constants.FAILED, response.getParams().getStatus());
+    }
+
+
+    @Test
+    void testGetNotificationsByUserIdAndLastXDays_filterUnread() {
+        String authToken = "Bearer xyz";
+        String userId = "user-42";
+        int days = 10, page = 0, size = 10;
+        Instant now = Instant.now();
+
+        Map<String, Object> notif1 = new HashMap<>();
+        notif1.put(Constants.NOTIFICATION_ID, "n1");
+        notif1.put(Constants.USER_ID, userId);
+        notif1.put(Constants.CREATED_AT, now.minusSeconds(3600));
+        notif1.put(Constants.READ, false);
+        notif1.put(Constants.CATEGORY, "catA");
+
+        Map<String, Object> notif2 = new HashMap<>();
+        notif2.put(Constants.NOTIFICATION_ID, "n2");
+        notif2.put(Constants.USER_ID, userId);
+        notif2.put(Constants.CREATED_AT, now.minusSeconds(7200));
+        notif2.put(Constants.READ, true);
+        notif2.put(Constants.CATEGORY, "catA");
+
+        when(accessTokenValidator.fetchUserIdFromAccessToken(authToken)).thenReturn(userId);
+        when(cassandraOperation.getRecordsByPropertiesWithoutFiltering(
+                anyString(), anyString(), anyMap(), any(), anyInt()))
+                .thenReturn(List.of(notif1, notif2));
+
+        NotificationServiceImpl spyService = Mockito.spy(notificationService);
+        doAnswer(invocation -> invocation.getArgument(0)).when(spyService).prepareNotificationResponse(any());
+
+        ApiResponse response = spyService.getNotificationsByUserIdAndLastXDays(
+                authToken, days, page, size, NotificationReadStatus.UNREAD, null);
+
+        assertEquals(HttpStatus.OK, response.getResponseCode());
+        Map<String, Object> result = (Map<String, Object>) response.getResult();
+        List<Map<String, Object>> returnedNotifs = (List<Map<String, Object>>) result.get(Constants.NOTIFICATIONS);
+        assertEquals(1, returnedNotifs.size());
+        assertEquals("n1", returnedNotifs.get(0).get(Constants.NOTIFICATION_ID));
+    }
+
+    @Test
+    void testMarkNotificationsAsRead_invalidType() {
+        String authToken = "Bearer xyz";
+        String userId = "user-42";
+        Map<String, Object> request = new HashMap<>();
+        request.put(Constants.TYPE, "invalid");
+
+        when(accessTokenValidator.fetchUserIdFromAccessToken(authToken)).thenReturn(userId);
+        ApiResponse response = notificationService.markNotificationsAsRead(authToken, request);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getResponseCode());
+        assertEquals(Constants.FAILED, response.getParams().getStatus());
+        assertTrue(response.getParams().getErrMsg().contains("Invalid type"));
+    }
+
+    @Test
+    void testMarkNotificationsAsRead_missingType() {
+        String authToken = "Bearer xyz";
+        String userId = "user-42";
+        Map<String, Object> request = new HashMap<>();
+
+        when(accessTokenValidator.fetchUserIdFromAccessToken(authToken)).thenReturn(userId);
+        ApiResponse response = notificationService.markNotificationsAsRead(authToken, request);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getResponseCode());
+        assertEquals(Constants.FAILED, response.getParams().getStatus());
+        assertTrue(response.getParams().getErrMsg().contains("Request type must be provided"));
+    }
+
+    @Test
+    void testMarkNotificationsAsRead_invalidIdsForIndividual() {
+        String authToken = "Bearer xyz";
+        String userId = "user-42";
+        Map<String, Object> request = new HashMap<>();
+        request.put(Constants.TYPE, Constants.INDIVIDUAL);
+        request.put("ids", "notalist"); // Invalid ids type
+
+        when(accessTokenValidator.fetchUserIdFromAccessToken(authToken)).thenReturn(userId);
+        ApiResponse response = notificationService.markNotificationsAsRead(authToken, request);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getResponseCode());
+        assertEquals(Constants.FAILED, response.getParams().getStatus());
+        assertTrue(response.getParams().getErrMsg().contains("Missing or invalid 'ids' field"));
+    }
+
+
+    @Test
+    void testGetUnreadNotificationCount_userIdMissing() {
+        String authToken = "Bearer xyz";
+        int days = 7;
+
+        when(accessTokenValidator.fetchUserIdFromAccessToken(authToken)).thenReturn("");
+
+        ApiResponse response = notificationService.getUnreadNotificationCount(authToken, days);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getResponseCode());
+        assertEquals(Constants.USER_ID_DOESNT_EXIST, response.getParams().getErrMsg());
+    }
+
+
 }
+
