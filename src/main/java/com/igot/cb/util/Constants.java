@@ -157,7 +157,7 @@ public class Constants {
     public static final String PAYLOAD_VALIDATION_UPDATE_FILE_ORG_BOOKMARK_LIST = "/payloadValidation/orgBookmarkUpdateValidation.json";
     public static final String UNDER_SCORE = "_";
     public static final String BOOKMARK_ALREADY_AVAILABLE = "Bookmark already available for the orgId: {0} and category: {1}, please update the bookmark.";
-    public static final String TOTAL_COUNT = "totalCount";
+
     public static final String TABLE_EMAIL_TEMPLATE = "email_template";
     public static final String TEMPLATE = "template";
     public static final String EMAIL = "email";
@@ -400,7 +400,8 @@ public class Constants {
     public static final String SOURCE = "source";
     public static final String CATEGORY = "category";
     public static final String NOTIFICATIONS = "notifications";
-    public static final String TOTAL = "total";
+
+    public static final String TOTAL_COUNT = "totalCount";
     public static final String PAGE = "page";
     public static final String SIZE = "size";
     public static final String HAS_NEXT_PAGE = "hasNextPage";

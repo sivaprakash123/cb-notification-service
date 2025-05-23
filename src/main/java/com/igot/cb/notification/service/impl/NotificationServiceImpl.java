@@ -31,7 +31,6 @@ import static com.igot.cb.util.Constants.*;
 public class NotificationServiceImpl implements NotificationService {
 
 
-
     @Autowired
     AccessTokenValidator accessTokenValidator;
 
@@ -254,7 +253,7 @@ public class NotificationServiceImpl implements NotificationService {
 
             Instant fromDate = ZonedDateTime.now(ZoneOffset.UTC).minusDays(days).toInstant();
 
-            List<Map<String, Object>> notifications = cassandraOperation.getRecordsByPropertiesWithoutFiltering(
+            List<Map<String, Object>> allNotifications = cassandraOperation.getRecordsByPropertiesWithoutFiltering(
                     Constants.KEYSPACE_SUNBIRD,
                     Constants.TABLE_USER_NOTIFICATION,
                     Map.of(USER_ID, userId),
@@ -262,7 +261,7 @@ public class NotificationServiceImpl implements NotificationService {
                     MAX_NOTIFICATIONS_FETCH_FOR_READ
             );
 
-            List<Map<String, Object>> filtered = notifications.stream()
+            List<Map<String, Object>> statFiltered = allNotifications.stream()
                     .filter(notification -> {
                         Instant createdAt = (Instant) notification.get(CREATED_AT);
                         if (createdAt == null || createdAt.isBefore(fromDate)) return false;
@@ -271,55 +270,54 @@ public class NotificationServiceImpl implements NotificationService {
                         if (status == NotificationReadStatus.READ && !Boolean.TRUE.equals(isRead)) return false;
                         if (status == NotificationReadStatus.UNREAD && !Boolean.FALSE.equals(isRead)) return false;
 
-                        if (StringUtils.isNotBlank(categoryFilter)) {
-                            String notificationCategory = (String) notification.getOrDefault(CATEGORY, ALL);
-                            return categoryFilter.equalsIgnoreCase(notificationCategory);
-                        }
-
                         return true;
                     })
                     .toList();
 
-            List<Map<String, Object>> categoryStats = new ArrayList<>();
-            if (StringUtils.isBlank(categoryFilter)) {
-                Map<String, Map<String, Integer>> categoryCountMap = new HashMap<>();
-                for (Map<String, Object> notification : filtered) {
-                    String cat = (String) notification.getOrDefault(CATEGORY, ALL);
-                    Boolean isRead = (Boolean) notification.get(READ);
 
-                    Map<String, Integer> counts = categoryCountMap.computeIfAbsent(cat, k -> new HashMap<>());
-                    counts.put(READ, counts.getOrDefault(READ, 0) + (Boolean.TRUE.equals(isRead) ? 1 : 0));
-                    counts.put(UNREAD, counts.getOrDefault(UNREAD, 0) + (Boolean.FALSE.equals(isRead) ? 1 : 0));
-                }
+            Map<String, Map<String, Integer>> categoryCountMap = new HashMap<>();
+            for (Map<String, Object> notification : statFiltered) {
+                String cat = (String) notification.getOrDefault(CATEGORY, ALL);
+                Boolean isRead = (Boolean) notification.get(READ);
 
-                categoryStats = categoryCountMap.entrySet().stream()
-                        .map(this::buildCategoryStat)
-                        .toList();
+                Map<String, Integer> counts = categoryCountMap.computeIfAbsent(cat, k -> new HashMap<>());
+                counts.put(READ, counts.getOrDefault(READ, 0) + (Boolean.TRUE.equals(isRead) ? 1 : 0));
+                counts.put(UNREAD, counts.getOrDefault(UNREAD, 0) + (Boolean.FALSE.equals(isRead) ? 1 : 0));
             }
 
-            long totalRead = filtered.stream().filter(n -> Boolean.TRUE.equals(n.get(READ))).count();
-            long totalUnread = filtered.stream().filter(n -> Boolean.FALSE.equals(n.get(READ))).count();
+            List<Map<String, Object>> categoryStats = categoryCountMap.entrySet().stream()
+                    .map(this::buildCategoryStat)
+                    .toList();
 
-            int total = filtered.size();
+
+            List<Map<String, Object>> finalFiltered = statFiltered.stream()
+                    .filter(notification -> {
+                        if (StringUtils.isNotBlank(categoryFilter)) {
+                            String cat = (String) notification.getOrDefault(CATEGORY, ALL);
+                            return categoryFilter.equalsIgnoreCase(cat);
+                        }
+                        return true;
+                    })
+                    .toList();
+
+
+            int total = finalFiltered.size();
             int fromIndex = Math.min(page * size, total);
             int toIndex = Math.min(fromIndex + size, total);
-            List<Map<String, Object>> paginated = filtered.subList(fromIndex, toIndex);
+            List<Map<String, Object>> paginated = finalFiltered.subList(fromIndex, toIndex);
 
             List<Map<String, Object>> processed = paginated.stream()
                     .map(this::prepareNotificationResponse)
                     .toList();
+
             Map<String, Object> resultMap = new HashMap<>();
             resultMap.put(NOTIFICATIONS, processed);
-            resultMap.put(TOTAL, total);
+            resultMap.put(TOTAL_COUNT, statFiltered.size());
             resultMap.put(PAGE, page);
             resultMap.put(SIZE, size);
             resultMap.put(HAS_NEXT_PAGE, toIndex < total);
-            resultMap.put(TOTAL_READ, totalRead);
-            resultMap.put(TOTAL_UNREAD, totalUnread);
+            resultMap.put(CATEGORY_STATS, categoryStats);
 
-            if (StringUtils.isBlank(categoryFilter)) {
-                resultMap.put(CATEGORY_STATS, categoryStats);
-            }
 
             response.setResponseCode(HttpStatus.OK);
             response.setResult(resultMap);
@@ -334,6 +332,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         return response;
     }
+
 
     private Map<String, Object> buildCategoryStat(Map.Entry<String, Map<String, Integer>> entry) {
         Map<String, Object> stat = new HashMap<>();
