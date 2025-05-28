@@ -141,11 +141,14 @@ public class NotificationServiceImpl implements NotificationService {
             Instant instant = LocalDateTime.now().atZone(zoneId).toInstant();
 
             for (JsonNode userIdNode : userIdsNode) {
-                String userId = userIdNode.asText();
+                JsonNode idNode = userIdNode.get("user_id");
+                String userId = (idNode != null) ? idNode.asText() : null;
+
                 if (StringUtils.isEmpty(userId)) {
                     log.warn("Empty user_id encountered in request");
                     continue;
                 }
+
 
                 Map<String, Object> dbMap = new HashMap<>();
                 dbMap.put(Constants.NOTIFICATION_ID, java.util.UUID.randomUUID().toString());
@@ -208,6 +211,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         try {
             String userId = accessTokenValidator.fetchUserIdFromAccessToken(authToken);
+
             if (StringUtils.isEmpty(userId)) {
                 updateErrorDetails(outgoingResponse, Constants.USER_ID_DOESNT_EXIST, HttpStatus.BAD_REQUEST);
                 return outgoingResponse;
@@ -257,7 +261,7 @@ public class NotificationServiceImpl implements NotificationService {
                     Constants.KEYSPACE_SUNBIRD,
                     Constants.TABLE_USER_NOTIFICATION,
                     Map.of(USER_ID, userId),
-                    List.of(NOTIFICATION_ID, CREATED_AT, TYPE, MESSAGE, READ, ROLE, SOURCE, CATEGORY),
+                    List.of(NOTIFICATION_ID, CREATED_AT, TYPE, MESSAGE, READ, ROLE, SOURCE, CATEGORY, SUB_CATEGORY, SUB_TYPE),
                     MAX_NOTIFICATIONS_FETCH_FOR_READ
             );
 

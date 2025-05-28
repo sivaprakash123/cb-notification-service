@@ -199,28 +199,43 @@ class NotificationServiceImplTest {
         Map<String, Object> result = notificationService.prepareNotificationResponse(dbRecord);
         assertNull(result.get("message"));
     }
-
     @Test
-    void testBulkCreateNotifications_success() throws Exception {
-        // Prepare input JSON with two user_ids
+    void testBulkCreateNotifications_exception() throws Exception {
         String payload = "{ \"request\": { " +
                 "\"type\": \"comment\"," +
-                "\"category\": \"content\"," +
-                "\"source\": \"userCreated\"," +
-                "\"role\": \"user\"," +
-                "\"message\": { \"text\": \"Bulk notification\" }," +
-                "\"user_ids\": [\"user1\", \"user2\"]" +
+                "\"user_ids\": [ {\"user_id\": \"user1\"} ]" +
                 "} }";
-
         ObjectMapper realMapper = new ObjectMapper();
         JsonNode userNotificationDetail = realMapper.readTree(payload);
 
-        // Mock cassandraOperation.insertBulkRecord to return success
         when(cassandraOperation.insertBulkRecord(
                 anyString(), anyString(), anyList()))
-                .thenReturn(Map.of("response", "SUCCESS"));
+                .thenThrow(new RuntimeException("DB error"));
 
-        // Mock prepareNotificationResponse to just return the input map (for simplicity)
+        ApiResponse response = notificationService.bulkCreateNotifications(userNotificationDetail);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getResponseCode());
+        assertEquals("Internal server error while saving notifications", response.getParams().getErrMsg());
+        assertEquals(Constants.FAILED, response.getParams().getStatus());
+    }
+
+    @Test
+    void testBulkCreateNotifications_success() throws Exception {
+        // Sample input where user_ids is an array of objects: [{ "user_id": "user1" }, { "user_id": "user2" }]
+        String payload = "{ \"request\": { " +
+                "\"type\": \"comment\"," +
+                "\"category\": \"content\"," +
+                "\"user_ids\": [ {\"user_id\": \"user1\"}, {\"user_id\": \"user2\"} ]" +
+                "} }";
+        ObjectMapper realMapper = new ObjectMapper();
+        JsonNode userNotificationDetail = realMapper.readTree(payload);
+
+        // Mock insertBulkRecord to return a successful ApiResponse
+        when(cassandraOperation.insertBulkRecord(
+                anyString(), anyString(), anyList()))
+                .thenReturn(new ApiResponse(Map.of(Constants.RESPONSE, Constants.SUCCESS).toString()));
+
+        // Spy to pass through prepareNotificationResponse
         NotificationServiceImpl spyService = Mockito.spy(notificationService);
         doAnswer(invocation -> invocation.getArgument(0)).when(spyService).prepareNotificationResponse(any());
 
@@ -232,8 +247,12 @@ class NotificationServiceImplTest {
         assertTrue(result.containsKey("notifications"));
         List<Map<String, Object>> notifications = (List<Map<String, Object>>) result.get("notifications");
         assertEquals(2, notifications.size());
-        assertEquals("user1", notifications.get(0).get(Constants.USER_ID));
-        assertEquals("user2", notifications.get(1).get(Constants.USER_ID));
+        Set<String> userIds = new HashSet<>();
+        for (Map<String, Object> notif : notifications) {
+            userIds.add((String) notif.get(Constants.USER_ID));
+        }
+        assertTrue(userIds.contains("user1"));
+        assertTrue(userIds.contains("user2"));
     }
 
     @Test
