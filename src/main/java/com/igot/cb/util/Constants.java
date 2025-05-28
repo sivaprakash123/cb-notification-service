@@ -400,6 +400,8 @@ public class Constants {
     public static final String SOURCE = "source";
     public static final String CATEGORY = "category";
     public static final String NOTIFICATIONS = "notifications";
+    public static final String  SUB_CATEGORY =  "sub_category";
+    public static final String  SUB_TYPE = "sub_type";
 
     public static final String TOTAL_COUNT = "totalCount";
     public static final String PAGE = "page";
