@@ -50,9 +50,9 @@ public class NotificationController {
             @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_PAGE + "") int page,
             @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_PAGE_SIZE + "") int size,
             @RequestParam(defaultValue = Constants.DEFAULT_NOTIFICATION_READ_STATUS) NotificationReadStatus status,
-            @RequestParam(required = false) String category) {
+            @RequestParam(required = false) String sub_type) {
 
-        ApiResponse response = notificationService.getNotificationsByUserIdAndLastXDays(token, days, page, size, status, category);
+        ApiResponse response = notificationService.getNotificationsByUserIdAndLastXDays(token, days, page, size, status, sub_type);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

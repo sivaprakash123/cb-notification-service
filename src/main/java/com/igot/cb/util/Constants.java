@@ -431,6 +431,7 @@ public class Constants {
     public static final String TOTAL_READ = "totalRead";
     public static final String TOTAL_UNREAD = "totalUnread";
     public static final String CATEGORY_STATS = "categoryStats";
+    public static final String SUBTYPE_STATS ="subtypeStats";
     public static final String INDIVIDUAL = "individual";
     public static final int MAX_USER_LIMIT = 100;
     public static final String USER_IDS = "user_ids";
