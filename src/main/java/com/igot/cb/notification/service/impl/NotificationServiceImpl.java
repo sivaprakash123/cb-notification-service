@@ -261,7 +261,7 @@ public class NotificationServiceImpl implements NotificationService {
                     Constants.KEYSPACE_SUNBIRD,
                     Constants.TABLE_USER_NOTIFICATION,
                     Map.of(USER_ID, userId),
-                    List.of(NOTIFICATION_ID, CREATED_AT, TYPE, MESSAGE, READ, ROLE, SOURCE, CATEGORY, SUB_CATEGORY, SUB_TYPE),
+                    List.of(NOTIFICATION_ID, CREATED_AT, TYPE, MESSAGE, READ, ROLE, SOURCE, CATEGORY, SUB_CATEGORY, SUB_TYPE, IS_DELETED),
                     MAX_NOTIFICATIONS_FETCH_FOR_READ
             );
 
@@ -273,6 +273,9 @@ public class NotificationServiceImpl implements NotificationService {
                         Boolean isRead = (Boolean) notification.get(READ);
                         if (status == NotificationReadStatus.READ && !Boolean.TRUE.equals(isRead)) return false;
                         if (status == NotificationReadStatus.UNREAD && !Boolean.FALSE.equals(isRead)) return false;
+
+                        Boolean isDeleted = (Boolean) notification.get(IS_DELETED);
+                        if (Boolean.TRUE.equals(isDeleted)) return false;
 
                         return true;
                     })
