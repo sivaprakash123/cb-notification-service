@@ -244,7 +244,7 @@ public class NotificationServiceImpl implements NotificationService {
 
 
     @Override
-    public ApiResponse getNotificationsByUserIdAndLastXDays(String authToken, int days, int page, int size, NotificationReadStatus status, String categoryFilter) {
+    public ApiResponse getNotificationsByUserIdAndLastXDays(String authToken, int days, int page, int size, NotificationReadStatus status, String subTypeFilter) {
         log.info("NotificationService::readByUserIdAndLastXDaysNotifications: inside the method");
         ApiResponse response = ProjectUtil.createDefaultResponse(Constants.USER_NOTIFICATION_READ_N_DAYSID);
 
@@ -279,26 +279,26 @@ public class NotificationServiceImpl implements NotificationService {
                     .toList();
 
 
-            Map<String, Map<String, Integer>> categoryCountMap = new HashMap<>();
+            Map<String, Map<String, Integer>> subTypeCountMap = new HashMap<>();
             for (Map<String, Object> notification : statFiltered) {
-                String cat = (String) notification.getOrDefault(CATEGORY, ALL);
+                String cat = (String) notification.getOrDefault(SUB_TYPE, ALL);
                 Boolean isRead = (Boolean) notification.get(READ);
 
-                Map<String, Integer> counts = categoryCountMap.computeIfAbsent(cat, k -> new HashMap<>());
+                Map<String, Integer> counts = subTypeCountMap.computeIfAbsent(cat, k -> new HashMap<>());
                 counts.put(READ, counts.getOrDefault(READ, 0) + (Boolean.TRUE.equals(isRead) ? 1 : 0));
                 counts.put(UNREAD, counts.getOrDefault(UNREAD, 0) + (Boolean.FALSE.equals(isRead) ? 1 : 0));
             }
 
-            List<Map<String, Object>> categoryStats = categoryCountMap.entrySet().stream()
-                    .map(this::buildCategoryStat)
+            List<Map<String, Object>> subTypeStats = subTypeCountMap.entrySet().stream()
+                    .map(this::buildSubTypeStat)
                     .toList();
 
 
             List<Map<String, Object>> finalFiltered = statFiltered.stream()
                     .filter(notification -> {
-                        if (StringUtils.isNotBlank(categoryFilter)) {
-                            String cat = (String) notification.getOrDefault(CATEGORY, ALL);
-                            return categoryFilter.equalsIgnoreCase(cat);
+                        if (StringUtils.isNotBlank(subTypeFilter)) {
+                            String subType = (String) notification.getOrDefault(SUB_TYPE, ALL);
+                            return subTypeFilter.equalsIgnoreCase(subType);
                         }
                         return true;
                     })
@@ -320,7 +320,7 @@ public class NotificationServiceImpl implements NotificationService {
             resultMap.put(PAGE, page);
             resultMap.put(SIZE, size);
             resultMap.put(HAS_NEXT_PAGE, toIndex < total);
-            resultMap.put(CATEGORY_STATS, categoryStats);
+            resultMap.put(SUBTYPE_STATS, subTypeStats);
 
 
             response.setResponseCode(HttpStatus.OK);
@@ -338,9 +338,9 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
 
-    private Map<String, Object> buildCategoryStat(Map.Entry<String, Map<String, Integer>> entry) {
+    private Map<String, Object> buildSubTypeStat(Map.Entry<String, Map<String, Integer>> entry) {
         Map<String, Object> stat = new HashMap<>();
-        stat.put(CATEGORY, entry.getKey());
+        stat.put(NAME, entry.getKey());
         stat.put(READ, entry.getValue().getOrDefault(READ, 0));
         stat.put(UNREAD, entry.getValue().getOrDefault(UNREAD, 0));
         return stat;

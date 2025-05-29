@@ -8,10 +8,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -28,12 +25,13 @@ public class FileProcessService {
       throw new RuntimeException(e.getMessage());
     }
   }
+
   private List<Map<String, String>> validateFileAndProcessRows(MultipartFile file) {
     log.info("DesignationServiceImpl::validateFileAndProcessRows");
 
     String fileName = file.getOriginalFilename();
     if (fileName == null) {
-      throw new RuntimeException("File name is null");
+      throw new IllegalArgumentException("File name is null");
     }
 
     try (InputStream inputStream = file.getInputStream()) {
@@ -45,13 +43,15 @@ public class FileProcessService {
       } else if (fileName.endsWith(".csv")) {
         return processCsvAndSendMessage(inputStream);
       } else {
-        throw new RuntimeException("Unsupported file type: " + fileName);
+        throw new UnsupportedOperationException("Unsupported file type: " + fileName);
       }
     } catch (IOException e) {
-      log.error("Error while processing file: {}", e.getMessage());
-      throw new RuntimeException("Error processing file", e);
+      log.error("Error while processing file: {}", e.getMessage(), e);
+      throw new UncheckedIOException("Error processing file", e);
     }
   }
+
+
 
   private List<Map<String, String>> processSheetAndSendMessage(Sheet sheet) {
     log.info("DesignationServiceImpl::processSheetAndSendMessage");
