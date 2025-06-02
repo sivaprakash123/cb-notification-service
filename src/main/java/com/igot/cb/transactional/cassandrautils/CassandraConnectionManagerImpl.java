@@ -80,6 +80,7 @@ public class CassandraConnectionManagerImpl implements CassandraConnectionManage
                         "Cassandra host is not configured",
                         HttpStatus.INTERNAL_SERVER_ERROR);
             }
+
             List<String> hosts = Arrays.asList(cassandraHost.split(","));
             List<InetSocketAddress> contactPoints = hosts.stream()
                     .map(host -> new InetSocketAddress(host.trim(), 9042)) // Assuming default port 9042
@@ -87,9 +88,17 @@ public class CassandraConnectionManagerImpl implements CassandraConnectionManage
             List<String> contactPointsString = hosts.stream()
                     .map(host -> host.trim() + ":9042") // Ensure proper host:port format
                     .collect(Collectors.toList());
+
+            // Ensure consistency level is not null
+            ConsistencyLevel consistencyLevel = getConsistencyLevel();
+            if (consistencyLevel == null) {
+                logger.warn("Consistency level is null, defaulting to LOCAL_QUORUM");
+                consistencyLevel = ConsistencyLevel.LOCAL_QUORUM;
+            }
+
             DriverConfigLoader loader = DriverConfigLoader.programmaticBuilder()
                     .withStringList(DefaultDriverOption.CONTACT_POINTS, contactPointsString)
-                    .withString(DefaultDriverOption.REQUEST_CONSISTENCY, getConsistencyLevel().name())
+                    .withString(DefaultDriverOption.REQUEST_CONSISTENCY, consistencyLevel.name())
                     .withString(DefaultDriverOption.LOAD_BALANCING_LOCAL_DATACENTER, "datacenter1")
                     .withInt(DefaultDriverOption.CONNECTION_POOL_LOCAL_SIZE,
                             Integer.parseInt(cache.getProperty(Constants.CORE_CONNECTIONS_PER_HOST_FOR_LOCAL)))
@@ -103,6 +112,7 @@ public class CassandraConnectionManagerImpl implements CassandraConnectionManage
                     .withClass(DefaultDriverOption.RETRY_POLICY_CLASS, com.datastax.oss.driver.internal.core.retry.DefaultRetryPolicy.class)
                     .withClass(DefaultDriverOption.TIMESTAMP_GENERATOR_CLASS, AtomicTimestampGenerator.class)
                     .build();
+
             CqlSession sessionWithKeyspaces;
             if (StringUtils.isNotBlank(keySpaceName)) {
                 sessionWithKeyspaces = CqlSession.builder()
@@ -118,14 +128,18 @@ public class CassandraConnectionManagerImpl implements CassandraConnectionManage
                         .withConfigLoader(loader)
                         .build();
             }
+
             logger.info("Connected to the keyspaces: " + keySpaceName);
+
             // Get metadata and log cluster information
             final Metadata metadata = sessionWithKeyspaces.getMetadata();
             logger.info(String.format("Connected to cluster: %s", metadata.getClusterName()));
+
             // Log nodes in the cluster
             for (Node host : metadata.getNodes().values()) {
                 logger.info(String.format("Datacenter: %s; Host: %s; Rack: %s", host.getDatacenter(), host.getEndPoint(), host.getRack()));
             }
+
             return sessionWithKeyspaces;
         } catch (Exception e) {
             logger.error("Error while creating Cassandra connection", e);
@@ -135,6 +149,7 @@ public class CassandraConnectionManagerImpl implements CassandraConnectionManage
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
     public void createCassandraConnection() {
         try {
@@ -156,16 +171,21 @@ public class CassandraConnectionManagerImpl implements CassandraConnectionManage
     public static ConsistencyLevel getConsistencyLevel() {
         String consistency = PropertiesCache.getInstance().readProperty(Constants.SUNBIRD_CASSANDRA_CONSISTENCY_LEVEL);
         logger.info("CassandraConnectionManagerImpl:getConsistencyLevel: level = " + consistency);
-        if (StringUtils.isBlank(consistency)) return null;
+
+        if (StringUtils.isBlank(consistency)) {
+            logger.warn("Consistency level not configured, defaulting to LOCAL_QUORUM");
+            return DefaultConsistencyLevel.LOCAL_QUORUM;
+        }
 
         try {
             return DefaultConsistencyLevel.valueOf(consistency.toUpperCase());
         } catch (IllegalArgumentException exception) {
-            logger.info("CassandraConnectionManagerImpl:getConsistencyLevel: Exception occurred with error message = "
-                    + exception.getMessage());
+            logger.warn("Invalid consistency level '{}', defaulting to LOCAL_QUORUM. Error: {}",
+                    consistency, exception.getMessage());
+            return DefaultConsistencyLevel.LOCAL_QUORUM;
         }
-        return null;
     }
+
 
 
     /**
