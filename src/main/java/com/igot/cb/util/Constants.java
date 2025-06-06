@@ -444,6 +444,8 @@ public class Constants {
     public static final String REDIS_CACHE = "redis cache";
     public static final String TABLE_SYSTEM_SETTINGS = "system_settings";
 
+    public static final String SPRING_KAFKA_BOOTSTRAP_SETTINGS = "spring.kafka.bootstrap.servers";
+
 
     private Constants() {
     }

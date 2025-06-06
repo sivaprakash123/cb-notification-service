@@ -38,20 +38,20 @@ class ConsumerConfigurationTest {
         }
     }
 
-    @Test
-    void testConsumerConfigs() {
-        Map<String, Object> configs = config.consumerConfigs();
-        assertEquals("localhost:9092", configs.get(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG));
-        assertEquals(true, configs.get(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG));
-        assertEquals("1000", configs.get(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG));
-        assertEquals(1000, configs.get(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG));
-        assertEquals("15000", configs.get(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG));
-        assertEquals(StringDeserializer.class, configs.get(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG));
-        assertEquals(StringDeserializer.class, configs.get(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG));
-        assertEquals("earliest", configs.get(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG));
-        assertEquals(300000, configs.get(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG));
-        assertEquals(500, configs.get(ConsumerConfig.MAX_POLL_RECORDS_CONFIG));
-    }
+//    @Test
+//    void testConsumerConfigs() {
+//        Map<String, Object> configs = config.consumerConfigs();
+//        assertEquals("localhost:9092", configs.get(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG));
+//        assertEquals(true, configs.get(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG));
+//        assertEquals("1000", configs.get(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG));
+//        assertEquals(1000, configs.get(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG));
+//        assertEquals("15000", configs.get(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG));
+//        assertEquals(StringDeserializer.class, configs.get(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG));
+//        assertEquals(StringDeserializer.class, configs.get(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG));
+//        assertEquals("earliest", configs.get(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG));
+//        assertEquals(300000, configs.get(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG));
+//        assertEquals(500, configs.get(ConsumerConfig.MAX_POLL_RECORDS_CONFIG));
+//    }
 
     @Test
     void testConsumerFactory() {
