@@ -47,4 +47,7 @@ public class CbServerProperties {
   @Value("${redis.connection.timeout}")
   private long redisConnectionTimeout;
 
+  @Value("${spring.kafka.bootstrap.servers}")
+  private String springKafkaBootStrapServers;
+
 }
