@@ -9,6 +9,7 @@ import java.time.Duration;
 public enum NotificationSubCategory {
     CONTENT_REVIEW_REQUEST(false),
     CONTENT_PUBLISHED(false),
+    CONTENT_SPV_PUBLISHED(false),
     CONTENT_REJECTED(false),
     CONTENT_EDITED(false),
     LIKED_POST(true) {
@@ -74,7 +75,7 @@ public enum NotificationSubCategory {
 
         @Override
         public String clubKey(JsonNode data) {
-            return data.get("id").asText();
+            return data.get("user_id").asText();
         }
     },
     ACCEPTED_CONNECTION_REQUEST(true) {
@@ -90,7 +91,7 @@ public enum NotificationSubCategory {
 
         @Override
         public String clubKey(JsonNode data) {
-            return data.get("id").asText();
+            return data.get("user_id").asText();
         }
     },
     REJECTED_CONNECTION_REQUEST(false),
