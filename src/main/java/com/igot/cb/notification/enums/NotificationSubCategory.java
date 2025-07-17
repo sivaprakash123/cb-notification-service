@@ -47,7 +47,7 @@ public enum NotificationSubCategory {
     REPLIED_POST(true) {
         @Override
         public String messageTemplate() {
-            return "You have {count} replies on your comment.";
+            return "You have {count} liked your reply.";
         }
 
         @Override
