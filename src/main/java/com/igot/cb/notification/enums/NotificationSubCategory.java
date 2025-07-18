@@ -77,38 +77,8 @@ public enum NotificationSubCategory {
         }
 
     },
-    SEND_CONNECTION_REQUEST(true) {
-        @Override
-        public String messageTemplate() {
-            return "You received {count} new connection requests.";
-        }
-
-        @Override
-        public Duration clubWindow() {
-            return Duration.ofMinutes(60);
-        }
-
-        @Override
-        public String clubKey(JsonNode data) {
-            return data.get("user_id").asText();
-        }
-    },
-    ACCEPTED_CONNECTION_REQUEST(true) {
-        @Override
-        public String messageTemplate() {
-            return "{count} users accepted your connection request.";
-        }
-
-        @Override
-        public Duration clubWindow() {
-            return Duration.ofMinutes(60);
-        }
-
-        @Override
-        public String clubKey(JsonNode data) {
-            return data.get("user_id").asText();
-        }
-    },
+    SEND_CONNECTION_REQUEST(false),
+    ACCEPTED_CONNECTION_REQUEST(false),
     REJECTED_CONNECTION_REQUEST(false),
     PROFILE_VERIFICATION(false),
     USER_TRANSFER(false),
