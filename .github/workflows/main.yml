@@ -42,3 +42,44 @@ jobs:
             -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.qualitygate.wait=true \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+
+      - name: Wait for and Check Quality Gate Status
+        shell: bash
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          echo "Waiting for SonarQube Quality Gate result..."
+
+          ceTaskId=$(grep -oP '(?<=ceTaskId=).*' .scannerwork/report-task.txt)
+          echo "Got ceTaskId: $ceTaskId"
+
+          for i in {1..10}; do
+            response=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/task?id=$ceTaskId")
+            status=$(echo "$response" | jq -r '.task.status')
+
+            if [[ "$status" == "SUCCESS" ]]; then
+              analysisId=$(echo "$response" | jq -r '.task.analysisId')
+              break
+            fi
+
+            echo "Waiting for analysis... ($i/10)"
+            sleep 5
+          done
+
+          if [[ "$status" != "SUCCESS" ]]; then
+            echo "❌ Analysis did not complete in time."
+            exit 1
+          fi
+
+          gateStatus=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$analysisId" | jq -r '.projectStatus.status')
+
+          echo "Quality Gate Status: $gateStatus"
+
+          if [[ "$gateStatus" != "OK" ]]; then
+            echo "❌ Quality Gate failed."
+            exit 1
+          else
+            echo "✅ Quality Gate passed."
+          fi
+            
