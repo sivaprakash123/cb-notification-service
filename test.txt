@@ -3,3 +3,4 @@ version 2 merge fails on QG fail
 Version 3 made branch protection rules
 version 4 enable github actions on branch protection rule
 version 5 update the scannerwork folder path for report generation
+version 6 change branch protection rule
